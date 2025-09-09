@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <ctime>
 #include <sstream>
+#include <cerrno>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -21,14 +22,7 @@
 
 #include <signal.h>
 
-#include "Server.hpp"
-#include "Logger.hpp"
-#include "Utils.hpp"
-#include "Client.hpp"
-#include "Channel.hpp"
-#include "Message.hpp"
-#include "Replies.hpp"
-
+// Forward declarations
 class Server;
 class Client;
 class Channel;

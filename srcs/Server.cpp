@@ -1,8 +1,8 @@
 #include "Server.hpp"
 #include "Utils.hpp"
+#include "Client.hpp" // Include Client.hpp here
 #include "Logger.hpp"
-#include "Client.hpp"
-#include <sstream>
+#include <cerrno>
 
 bool Server::signal = false;
 

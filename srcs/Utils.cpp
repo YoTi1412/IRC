@@ -50,8 +50,10 @@ std::string Utils::intToString(int value) {
 
 int Utils::setnonblocking(int client_fd) {
     int flags = fcntl(client_fd, F_GETFL, 0);
-    if (flags < 0) return -1;
-    if (fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) < 0) return -1;
+    if (flags < 0)
+        return -1;
+    if (fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) < 0)
+        return -1;
     return 0;
 }
 

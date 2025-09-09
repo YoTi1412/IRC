@@ -1,6 +1,6 @@
 #include "Server.hpp"
 #include "Utils.hpp"
-#include "Client.hpp" // Include Client.hpp here
+#include "Client.hpp"
 #include "Logger.hpp"
 #include <cerrno>
 
@@ -104,11 +104,12 @@ void Server::initPollFd() {
     pollFds.back().events = POLLIN;
     pollFds.back().revents = 0;
 
-    // Set non-blocking mode
+    // Set non-blocking mode and reserve space for multiple clients
     if (Utils::setnonblocking(sock_fd) < 0) {
         close(sock_fd);
         throw std::runtime_error("Failed to set non-blocking mode on server socket");
     }
+    pollFds.reserve(100); // Reserve space for up to 100 clients to avoid reallocation
 }
 
 void Server::serverInit() {
@@ -124,8 +125,84 @@ void Server::serverInit() {
     Logger::info("Server initialized on port " + Utils::intToString(port));
 }
 
+void Server::pollForEvents() {
+    if (poll(&pollFds[0], pollFds.size(), -1) < 0) {
+        if (errno == EINTR) return;
+        Logger::error("Poll failed: " + std::string(strerror(errno)));
+    }
+}
+
+void Server::acceptNewConnection() {
+    struct sockaddr_in clientAddress;
+    socklen_t clientLen = sizeof(clientAddress);
+    int client_fd = accept(sock_fd, (struct sockaddr*)&clientAddress, &clientLen);
+    if (client_fd < 0) {
+        Logger::warning("Failed to accept connection: " + std::string(strerror(errno)));
+        return;
+    }
+
+    if (Utils::setnonblocking(client_fd) < 0) {
+        close(client_fd);
+        Logger::warning("Failed to set non-blocking mode on client socket");
+        return;
+    }
+
+    Client* newClient = new Client();
+    newClient->setFd(client_fd);
+    char ipStr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(clientAddress.sin_addr), ipStr, INET_ADDRSTRLEN);
+    newClient->setIPAddress(ipStr);
+    clients[client_fd] = newClient;
+
+    pollFds.push_back(pollfd());
+    pollFds.back().fd = client_fd;
+    pollFds.back().events = POLLIN;
+    pollFds.back().revents = 0;
+
+    Logger::info("New client connected, fd: " + Utils::intToString(client_fd) + ", IP: " + ipStr);
+}
+
+void Server::handleClientData(std::vector<pollfd>::iterator& it) {
+    char buffer[1024] = {0};
+    int bytesRead = read(it->fd, buffer, sizeof(buffer) - 1);
+    if (bytesRead < 0) {
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            Logger::warning("Read error on fd: " + Utils::intToString(it->fd) + ", " + std::string(strerror(errno)));
+        }
+        return;
+    } else if (bytesRead == 0) {
+        cleanupDisconnectedClient(it);
+    } else {
+        buffer[bytesRead] = '\0';
+        std::string command(buffer);
+        if (clients.find(it->fd) != clients.end()) {
+            clients[it->fd]->processCommand(command);
+        }
+    }
+}
+
+void Server::cleanupDisconnectedClient(std::vector<pollfd>::iterator& it) {
+    Logger::info("Client disconnected, fd: " + Utils::intToString(it->fd));
+    close(it->fd);
+    delete clients[it->fd];
+    clients.erase(it->fd);
+    it = pollFds.erase(it);
+    --it; // Adjust iterator after erase
+}
+
 void Server::serverRun() {
-    // To be implemented after refining Client and other utilities
+    while (!signal) {
+        pollForEvents();
+        for (std::vector<pollfd>::iterator it = pollFds.begin(); it != pollFds.end(); ++it) {
+            if (it->revents & POLLIN) {
+                if (it->fd == sock_fd) {
+                    acceptNewConnection();
+                } else {
+                    handleClientData(it);
+                }
+            }
+        }
+    }
 }
 
 void Server::sigHandler(int sig)

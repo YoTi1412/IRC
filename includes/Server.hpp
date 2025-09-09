@@ -17,13 +17,19 @@ private:
     std::map<int, Client*>          clients;
     // std::map<std::string, Channel*> channels;
 
-    // Helper methods
+    // Helper methods for serverInit
     void createSocket();
     void configureServerAddress();
     void setSocketTimeout();
     void bindSocket();
     void listenOnSocket();
     void initPollFd();
+
+    // Helper methods for serverRun
+    void pollForEvents();
+    void acceptNewConnection();
+    void handleClientData(std::vector<pollfd>::iterator& it);
+    void cleanupDisconnectedClient(std::vector<pollfd>::iterator& it);
 
     Server(const Server &server);
     Server &operator=(const Server &server);

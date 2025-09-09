@@ -48,19 +48,18 @@ std::string Utils::intToString(int value) {
     return ss.str();
 }
 
+int Utils::setnonblocking(int client_fd) {
+    int flags = fcntl(client_fd, F_GETFL, 0);
+    if (flags < 0) return -1;
+    if (fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) < 0) return -1;
+    return 0;
+}
 
-// uint16_t ft_htons(uint16_t hostshort) {
-//     unsigned char test[2] = {1, 0};  // 0x0001 in memory
-//     // If first byte is 1, machine is little-endian
-//     if (*(short*)test == 1) {
-//         // Little-endian: swap the bytes
-//         return (hostshort >> 8) | (hostshort << 8);
-//     } else {
-//         // Big-endian: no need to swap
-//         return hostshort;
-//     }
-// }
-
+// Remaining methods to be implemented later
+std::list<std::string> Utils::splitString(std::string& cmd) { return std::list<std::string>(); }
+void Utils::sendError(int fd, const std::string& message) {}
+void Utils::sendReply(int fd, const std::string& message) {}
+bool Utils::isNumber(const std::string& str) { return false; }
 
 // std::list<std::string> Utils::splitString(std::string& cmd) { return std::list<std::string>(); }
 // void Utils::sendError(int fd, const std::string& message) {}

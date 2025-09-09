@@ -3,10 +3,12 @@
 #include "Client.hpp"
 #include "Logger.hpp"
 #include <cerrno>
+#include <set> // For tracking processed fds
 
 bool Server::signal = false;
 
 Server::Server(const std::string &portStr, const std::string &password)
+    : processedFds() // Initialize the set
 {
     if (portStr.empty() || password.empty()) {
         throw std::invalid_argument("Arguments are empty!");
@@ -109,7 +111,7 @@ void Server::initPollFd() {
         close(sock_fd);
         throw std::runtime_error("Failed to set non-blocking mode on server socket");
     }
-    pollFds.reserve(100); // Reserve space for up to 100 clients to avoid reallocation
+    pollFds.reserve(100); // Reserve space for up to 100 clients
 }
 
 void Server::serverInit() {
@@ -125,8 +127,8 @@ void Server::serverInit() {
     Logger::info("Server initialized on port " + Utils::intToString(port));
 }
 
-void Server::pollForEvents() {
-    if (poll(&pollFds[0], pollFds.size(), -1) < 0) {
+void Server::pollForEvents(std::vector<pollfd>& pollCopy) {
+    if (poll(&pollCopy[0], pollCopy.size(), -1) < 0) {
         if (errno == EINTR) return;
         Logger::error("Poll failed: " + std::string(strerror(errno)));
     }
@@ -171,7 +173,10 @@ void Server::handleClientData(std::vector<pollfd>::iterator& it) {
         }
         return;
     } else if (bytesRead == 0) {
-        cleanupDisconnectedClient(it);
+        if (processedFds.find(it->fd) == processedFds.end()) {
+            cleanupDisconnectedClient(it);
+            processedFds.insert(it->fd);
+        }
     } else {
         buffer[bytesRead] = '\0';
         std::string command(buffer);
@@ -192,13 +197,21 @@ void Server::cleanupDisconnectedClient(std::vector<pollfd>::iterator& it) {
 
 void Server::serverRun() {
     while (!signal) {
-        pollForEvents();
-        for (std::vector<pollfd>::iterator it = pollFds.begin(); it != pollFds.end(); ++it) {
-            if (it->revents & POLLIN) {
-                if (it->fd == sock_fd) {
+        std::vector<pollfd> pollCopy = pollFds; // Create a copy for poll
+        pollForEvents(pollCopy);
+        processedFds.clear(); // Clear processed fds at the start of each iteration
+        for (size_t i = 0; i < pollCopy.size(); ++i) {
+            if (pollCopy[i].revents & POLLIN) {
+                if (pollCopy[i].fd == sock_fd) {
                     acceptNewConnection();
                 } else {
-                    handleClientData(it);
+                    // Find the corresponding iterator in pollFds
+                    for (std::vector<pollfd>::iterator it = pollFds.begin(); it != pollFds.end(); ++it) {
+                        if (it->fd == pollCopy[i].fd) {
+                            handleClientData(it);
+                            break;
+                        }
+                    }
                 }
             }
         }

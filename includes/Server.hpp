@@ -15,7 +15,7 @@ private:
     std::string                     createdtime;
     std::vector<pollfd>             pollFds;
     std::map<int, Client*>          clients;
-    // std::map<std::string, Channel*> channels;
+    std::set<int>                   processedFds; // Track processed fds
 
     // Helper methods for serverInit
     void createSocket();
@@ -26,7 +26,7 @@ private:
     void initPollFd();
 
     // Helper methods for serverRun
-    void pollForEvents();
+    void pollForEvents(std::vector<pollfd>& pollCopy); // Updated declaration
     void acceptNewConnection();
     void handleClientData(std::vector<pollfd>::iterator& it);
     void cleanupDisconnectedClient(std::vector<pollfd>::iterator& it);

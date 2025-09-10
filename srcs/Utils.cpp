@@ -57,8 +57,15 @@ int Utils::setnonblocking(int client_fd) {
     return 0;
 }
 
-// // Remaining methods to be implemented later
-// std::list<std::string> Utils::splitString(std::string& cmd) { return std::list<std::string>(); }
-// void Utils::sendError(int fd, const std::string& message) {}
-// void Utils::sendReply(int fd, const std::string& message) {}
-// bool Utils::isNumber(const std::string& str) { return false; }
+std::list<std::string> Utils::splitString(std::string &cmd) {
+    std::list<std::string> lst;
+    std::istringstream stm(cmd);
+    std::string token;
+
+    while (std::getline(stm, token, ' ')) {
+        if (!token.empty()) {
+            lst.push_back(token);
+        }
+    }
+    return lst;
+}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Includes.hpp"
+#define BUFFER_SIZE 1024
 
 class Client; // Forward declaration
 
@@ -26,13 +27,17 @@ private:
     void initPollFd();
 
     // Helper methods for serverRun
-    void pollForEvents(std::vector<pollfd>& pollCopy); // Updated declaration
+    void pollForEvents(std::vector<pollfd>& pollCopy);
     void acceptNewConnection();
     void handleClientData(std::vector<pollfd>::iterator& it);
     void cleanupDisconnectedClient(std::vector<pollfd>::iterator& it);
 
     Server(const Server &server);
     Server &operator=(const Server &server);
+    void executeCommand(int fd, std::list<std::string> cmdList);
+    void handlePass(std::list<std::string> cmdList, Client* client, Server* server);
+    void handleNick(int fd, std::list<std::string> cmdList, Client* client);
+    void handleUser(int fd, std::list<std::string> cmdList, Client* client);
 
 public:
     Server(const std::string &port, const std::string &password);
@@ -44,4 +49,10 @@ public:
 
     const std::string &getName() const;
     const std::string &getCreatedTime() const;
+    const std::string &getPassword() const; // Added getter for password
 };
+
+// Inline implementation of getPassword
+inline const std::string &Server::getPassword() const {
+    return password;
+}

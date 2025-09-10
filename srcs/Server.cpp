@@ -2,13 +2,11 @@
 #include "Utils.hpp"
 #include "Client.hpp"
 #include "Logger.hpp"
-#include <cerrno>
-#include <set> // For tracking processed fds
 
 bool Server::signal = false;
 
 Server::Server(const std::string &portStr, const std::string &password)
-    : processedFds() // Initialize the set
+    : processedFds()
 {
     if (portStr.empty() || password.empty()) {
         throw std::invalid_argument("Arguments are empty!");
@@ -32,7 +30,8 @@ Server::~Server()
         delete it->second;
     }
     clients.clear();
-    if (sock_fd > 0) close(sock_fd);
+    if (sock_fd > 0)
+        close(sock_fd);
     Logger::info("Server with port " + Utils::intToString(port) + " is shutting down.");
 }
 
@@ -73,100 +72,69 @@ void Server::configureServerAddress() {
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     serverAddress.sin_port = htons(port);
+    // RFC 2812 Reference: Section 2.1 - Server address configuration
 }
 
 void Server::setSocketTimeout() {
-    struct timeval timeout;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
-    if (setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
-        close(sock_fd);
+    struct timeval tv;
+    tv.tv_sec = 5; // 5-second timeout
+    tv.tv_usec = 0;
+    if (setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) < 0) {
         throw std::runtime_error("Failed to set socket timeout: " + std::string(strerror(errno)));
     }
 }
 
 void Server::bindSocket() {
     if (bind(sock_fd, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
-        close(sock_fd);
         throw std::runtime_error("Failed to bind socket: " + std::string(strerror(errno)));
     }
 }
 
 void Server::listenOnSocket() {
     if (listen(sock_fd, SOMAXCONN) < 0) {
-        close(sock_fd);
         throw std::runtime_error("Failed to listen on socket: " + std::string(strerror(errno)));
     }
 }
 
 void Server::initPollFd() {
-    pollFds.clear();
-    pollFds.push_back(pollfd());
-    pollFds.back().fd = sock_fd;
-    pollFds.back().events = POLLIN;
-    pollFds.back().revents = 0;
-
-    // Set non-blocking mode and reserve space for multiple clients
-    if (Utils::setnonblocking(sock_fd) < 0) {
-        close(sock_fd);
-        throw std::runtime_error("Failed to set non-blocking mode on server socket");
-    }
-    pollFds.reserve(100); // Reserve space for up to 100 clients
-}
-
-void Server::serverInit() {
-    signal = false;
-
-    createSocket();
-    configureServerAddress();
-    setSocketTimeout();
-    bindSocket();
-    listenOnSocket();
-    initPollFd();
-
-    Logger::info("Server initialized on port " + Utils::intToString(port));
+    pollfd pfd;
+    pfd.fd = sock_fd;
+    pfd.events = POLLIN;
+    pollFds.push_back(pfd);
 }
 
 void Server::pollForEvents(std::vector<pollfd>& pollCopy) {
     if (poll(&pollCopy[0], pollCopy.size(), -1) < 0) {
-        if (errno == EINTR) return;
-        Logger::error("Poll failed: " + std::string(strerror(errno)));
+        throw std::runtime_error("Poll failed: " + std::string(strerror(errno)));
     }
 }
 
 void Server::acceptNewConnection() {
-    struct sockaddr_in clientAddress;
-    socklen_t clientLen = sizeof(clientAddress);
-    int client_fd = accept(sock_fd, (struct sockaddr*)&clientAddress, &clientLen);
-    if (client_fd < 0) {
-        Logger::warning("Failed to accept connection: " + std::string(strerror(errno)));
+    struct sockaddr_in clientAddr;
+    socklen_t clientLen = sizeof(clientAddr);
+    int clientFd = accept(sock_fd, (struct sockaddr*)&clientAddr, &clientLen);
+    if (clientFd < 0) {
+        Logger::warning("Accept failed: " + std::string(strerror(errno)));
         return;
     }
-
-    if (Utils::setnonblocking(client_fd) < 0) {
-        close(client_fd);
-        Logger::warning("Failed to set non-blocking mode on client socket");
-        return;
-    }
-
-    Client* newClient = new Client();
-    newClient->setFd(client_fd);
-    char ipStr[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(clientAddress.sin_addr), ipStr, INET_ADDRSTRLEN);
-    newClient->setIPAddress(ipStr);
-    clients[client_fd] = newClient;
-
-    pollFds.push_back(pollfd());
-    pollFds.back().fd = client_fd;
-    pollFds.back().events = POLLIN;
-    pollFds.back().revents = 0;
-
-    Logger::info("New client connected, fd: " + Utils::intToString(client_fd) + ", IP: " + ipStr);
+    Utils::setnonblocking(clientFd);
+    pollfd pfd;
+    pfd.fd = clientFd;
+    pfd.events = POLLIN;
+    pollFds.push_back(pfd);
+    Client* client = new Client();
+    client->setFd(clientFd);
+    char ip[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(clientAddr.sin_addr), ip, INET_ADDRSTRLEN);
+    client->setIPAddress(ip);
+    clients[clientFd] = client;
+    Logger::info("New client connected, fd: " + Utils::intToString(clientFd) + ", IP: " + ip);
+    // RFC 2812 Reference: Section 3.1 - Client connection handling
 }
 
 void Server::handleClientData(std::vector<pollfd>::iterator& it) {
-    char buffer[1024] = {0};
-    int bytesRead = read(it->fd, buffer, sizeof(buffer) - 1);
+    char tempBuffer[BUFFER_SIZE] = {0};
+    int bytesRead = read(it->fd, tempBuffer, sizeof(tempBuffer) - 1);
     if (bytesRead < 0) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
             Logger::warning("Read error on fd: " + Utils::intToString(it->fd) + ", " + std::string(strerror(errno)));
@@ -178,11 +146,41 @@ void Server::handleClientData(std::vector<pollfd>::iterator& it) {
             processedFds.insert(it->fd);
         }
     } else {
-        buffer[bytesRead] = '\0';
-        std::string command(buffer);
+        tempBuffer[bytesRead] = '\0';
+        Logger::debug("Read " + Utils::intToString(bytesRead) + " bytes from fd " + Utils::intToString(it->fd) + ": " + std::string(tempBuffer));
         if (clients.find(it->fd) != clients.end()) {
-            clients[it->fd]->processCommand(command);
+            clients[it->fd]->getCommandBuffer() += std::string(tempBuffer); // Append to client's buffer
+            clients[it->fd]->processCommand(""); // Trigger processing
+            // Dispatch commands after buffer processing
+            std::list<std::string> cmdList = Utils::splitString(clients[it->fd]->getCommandBuffer());
+            if (!cmdList.empty()) {
+                std::string cmd = *cmdList.begin();
+                std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
+                executeCommand(it->fd, cmdList);
+            }
         }
+    }
+    // RFC 2812 Reference: Section 2.3 - Handle partial TCP data
+}
+
+void Server::executeCommand(int fd, std::list<std::string> cmdList) {
+    if (cmdList.empty()) return;
+    std::string cmd = *cmdList.begin();
+    std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
+    Client* client = clients[fd];
+
+    if (cmd == "PASS") {
+        handlePass(cmdList, client, this); // Updated to remove fd
+    } else if (cmd == "NICK") {
+        handleNick(fd, cmdList, client);
+    } else if (cmd == "USER") {
+        handleUser(fd, cmdList, client);
+    } else {
+        client->sendReply(":ircserv 421 " + (client->getNickname().empty() ? "*" : client->getNickname()) + " " + cmd + " :Unknown command\r\n");
+    }
+    size_t pos = client->getCommandBuffer().find(CRLF);
+    if (pos != std::string::npos) {
+        client->getCommandBuffer().erase(0, pos + 2);
     }
 }
 
@@ -192,20 +190,19 @@ void Server::cleanupDisconnectedClient(std::vector<pollfd>::iterator& it) {
     delete clients[it->fd];
     clients.erase(it->fd);
     it = pollFds.erase(it);
-    --it; // Adjust iterator after erase
+    --it;
 }
 
 void Server::serverRun() {
     while (!signal) {
-        std::vector<pollfd> pollCopy = pollFds; // Create a copy for poll
+        std::vector<pollfd> pollCopy = pollFds;
         pollForEvents(pollCopy);
-        processedFds.clear(); // Clear processed fds at the start of each iteration
+        processedFds.clear();
         for (size_t i = 0; i < pollCopy.size(); ++i) {
             if (pollCopy[i].revents & POLLIN) {
                 if (pollCopy[i].fd == sock_fd) {
                     acceptNewConnection();
                 } else {
-                    // Find the corresponding iterator in pollFds
                     for (std::vector<pollfd>::iterator it = pollFds.begin(); it != pollFds.end(); ++it) {
                         if (it->fd == pollCopy[i].fd) {
                             handleClientData(it);
@@ -223,4 +220,14 @@ void Server::sigHandler(int sig)
     (void)sig;
     Logger::warning("Signal Received! Stopping server...");
     signal = true;
+}
+
+void Server::serverInit() {
+    createSocket();
+    configureServerAddress();
+    setSocketTimeout();
+    bindSocket();
+    listenOnSocket();
+    initPollFd();
+    Logger::info("Server initialized on port " + Utils::intToString(port));
 }

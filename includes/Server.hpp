@@ -27,6 +27,14 @@ private:
     void bindSocket();
     void listenOnSocket();
     void initPollFd();
+    void logInitialization();
+    void validateArgs(const std::string &portStr, const std::string &password);
+    void checkEmptyArgs(const std::string &portStr, const std::string &password);
+    void validatePort(const std::string &portStr);
+    void validatePassword(const std::string &password);
+    void cleanupAllClients();
+    void closeSocket();
+    void logShutdown();
 
     // Helper methods for run
     void initializeFileDescriptors();
@@ -36,6 +44,8 @@ private:
     void acceptNewConnection();
     void handleClientData(std::vector<pollfd>::iterator& it);
     void cleanupDisconnectedClient(std::vector<pollfd>::iterator& it); // Updated: Removed bytesRead
+    void processEvents(const std::vector<pollfd>& pollCopy);
+    void handleClientPoll(int fd);
 
     Server(const Server &server);
     Server &operator=(const Server &server);

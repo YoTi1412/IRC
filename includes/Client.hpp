@@ -21,14 +21,15 @@
 class Client {
 private:
     int fd;
-    std::string IPAddress;
-    std::string nickname;
-    std::string username;
-    std::string hostname;
     bool registered;
     bool authenticated;
     bool nickSet;
     bool userSet;
+    std::string IPAddress;
+    std::string nickname;
+    std::string username;
+    std::string hostname;
+    std::string realname;
     std::string commandBuffer;
 
     Client(const Client& other);
@@ -46,6 +47,8 @@ public:
     std::string getNickname() const;
     std::string getUsername() const;
     std::string getHostname() const;
+    std::string getRealname() const;
+    void setRealname(const std::string& realname);
     bool isRegistered() const;
     bool isAuthenticated() const;
     bool isNickSet() const;

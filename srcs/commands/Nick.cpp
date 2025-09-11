@@ -105,13 +105,14 @@ static void updateNickAndNotify(Client* client, const std::string& nick) {
  *
  * @param client Client to register.
  */
-static void maybeRegister(Client* client) {
+static void maybeRegister(Client* client, Server* server) {
     if (client->isAuthenticated() && client->isNickSet() && client->isUserSet() && !client->isRegistered()) {
         client->setRegistered(true);
         std::string nick = client->getNickname();
-        client->sendReply(IRC_SERVER " " RPL_WELCOME " " + nick + " :Welcome to the IRC server!");
+        std::string userIdent = nick + "!" + client->getUsername() + "@" + client->getHostname();
+        client->sendReply(IRC_SERVER " " RPL_WELCOME " " + nick + " :Welcome to the Internet Relay Network " + userIdent);
         client->sendReply(IRC_SERVER " " RPL_YOURHOST " " + nick + " :Your host is ircserv, running version 1.0");
-        client->sendReply(IRC_SERVER " " RPL_CREATED " " + nick + " :This server was created on " + Utils::getFormattedTime());
+        client->sendReply(IRC_SERVER " " RPL_CREATED " " + nick + " :This server was created " + server->getCreatedTime());
     }
 }
 
@@ -144,5 +145,5 @@ void handleNick(std::list<std::string> cmdList, Client* client, Server* server) 
     if (!isNickAvailable(nick, client, clients)) return;
 
     updateNickAndNotify(client, nick);
-    maybeRegister(client);
+    maybeRegister(client, server);
 }

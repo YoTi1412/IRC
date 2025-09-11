@@ -4,7 +4,7 @@
 
 // Constructor
 Client::Client()
-    : fd(-1), registered(false), authenticated(false), nickSet(false), userSet(false)
+    : fd(-1), registered(false), authenticated(false), nickSet(false), userSet(false), realname("")
 {
     Logger::debug(LOG_CLIENT_CREATED);
 }
@@ -23,6 +23,7 @@ std::string Client::getIPAddress() const { return IPAddress; }
 std::string Client::getNickname() const { return nickname; }
 std::string Client::getUsername() const { return username; }
 std::string Client::getHostname() const { return hostname; }
+std::string Client::getRealname() const { return realname; }
 bool Client::isRegistered() const { return registered; }
 bool Client::isAuthenticated() const { return authenticated; }
 bool Client::isNickSet() const { return nickSet; }
@@ -46,6 +47,12 @@ void Client::setHostname(const std::string& hostname) {
     this->hostname = hostname;
     Logger::debug(LOG_HOSTNAME_SET(hostname));
 }
+
+void Client::setRealname(const std::string& realname) {
+    this->realname = realname;
+    Logger::debug("Realname set to: " + realname);
+}
+
 void Client::setAuthenticated(bool status) {
     authenticated = status;
     Logger::debug(LOG_AUTH_STATUS(status));

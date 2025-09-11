@@ -1,50 +1,123 @@
 #include "Command.hpp"
 #include "Utils.hpp"
 #include "Logger.hpp"
+#include "Replies.hpp"
 
 /**
- * Handles the USER command as specified in RFC 2812 (Section 3.1.3).
+ * @brief Validates the USER command according to RFC 2812 (Section 3.1.3).
  *
- * Syntax:
- *   USER <username> <mode> <unused> :<realname>
+ * Syntax (RFC 2812 §3.1.3):
+ *   USER <username> <mode> <unused> <realname>
  *
- * - <username>: Sets the username of the client.
- * - <mode>: User mode (ignored, server uses client’s actual connection data).
- * - <unused>: Historical field for server name (ignored).
- * - <realname>: Full name / description of the user.
+ * Behaviour:
+ * - Requires exactly 4 parameters (total 5 tokens incl. "USER").
+ * - Client must be authenticated (PASS already sent).
+ * - NICK must already have been sent.
+ * - USER may be sent only once and only before registration is complete.
  *
- * Behavior:
- * - If fewer than 4 parameters are supplied, reply with ERR_NEEDMOREPARAMS (461).
- * - The hostname is taken from the client’s IP address, not the supplied parameter.
- * - Registration completes when PASS, NICK, and USER are all successfully set.
- * - Upon successful registration, the server sends:
- *      • RPL_WELCOME (001)
- *      • RPL_YOURHOST (002)
- *      • RPL_CREATED (003)
+ * Replies:
+ * - ERR_NEEDMOREPARAMS (461)  if any parameter is missing
+ * - ERR_OUTOFORDER            custom code for order violations
+ * - ERR_ALREADYREGISTRED (462) if registration has already finished
+ */
+static bool validateUserCommand(std::list<std::string>& cmdList, Client* client) {
+    if (cmdList.size() < 5) {
+        client->sendReply(IRC_SERVER " " ERR_NEEDMOREPARAMS " * USER :Not enough parameters");
+        return false;
+    }
+    if (!client->isAuthenticated()) {
+        client->sendReply(IRC_SERVER " " ERR_OUTOFORDER " * :You must send PASS before USER");
+        return false;
+    }
+    if (client->isRegistered()) {
+        client->sendReply(IRC_SERVER " " ERR_ALREADYREGISTRED " " + client->getNickname() + " :Unauthorized command (already registered)");
+        return false;
+    }
+    if (client->isUserSet()) {
+        client->sendReply(IRC_SERVER " " ERR_ALREADYREGISTRED " * :USER already set");
+        return false;
+    }
+    if (!client->isNickSet()) {
+        client->sendReply(IRC_SERVER " " ERR_OUTOFORDER " * :NICK must be sent before USER");
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief Completes client registration if all conditions are met.
  *
- * Reference: RFC 2812 Section 3.1.3
+ * Registration finishes when:
+ * - PASS accepted (authenticated)
+ * - NICK successfully set
+ * - USER successfully set
+ *
+ * Upon success the server sends:
+ * - RPL_WELCOME  (001)
+ * - RPL_YOURHOST (002)
+ * - RPL_CREATED  (003)
+ * as specified in RFC 2812 §5.1.
+ */
+static void maybeRegister(Client* client, Server* server) {
+    if (client->isAuthenticated() && client->isNickSet() && client->isUserSet() && !client->isRegistered()) {
+        client->setRegistered(true);
+        std::string nick = client->getNickname();
+        std::string userIdent = nick + "!" + client->getUsername() + "@" + client->getHostname();
+        client->sendReply(IRC_SERVER " " RPL_WELCOME " " + nick + " :Welcome to the Internet Relay Network " + userIdent);
+        client->sendReply(IRC_SERVER " " RPL_YOURHOST " " + nick + " :Your host is ircserv, running version 1.0");
+        client->sendReply(IRC_SERVER " " RPL_CREATED " " + nick + " :This server was created " + server->getCreatedTime());
+    }
+}
+
+/**
+ * @brief Handles the USER command as specified in RFC 2812 (Section 3.1.3).
+ *
+ * Parameters:
+ * 1. <username> - login name (stored)
+ * 2. <mode>     - bitmask for initial user modes (ignored except "0" enforced here)
+ * 3. <unused>   - historical field, totally ignored
+ * 4. <realname> - human-readable name (stored)
+ *
+ * The server:
+ * - Validates parameter count and command order
+ * - Enforces <mode> == "0" (project decision, not mandated by RFC)
+ * - Strips leading ':' from <realname> if present
+ * - Completes registration when NICK+USER+PASS are all satisfied
  */
 void handleUser(std::list<std::string> cmdList, Client* client, Server* server) {
-    if (cmdList.size() != 5) {
-        client->sendReply(":ircserv 461 * USER :Not enough parameters\r\n");
-        return;
-    }
+    if (!validateUserCommand(cmdList, client)) return;
 
     std::list<std::string>::iterator it = cmdList.begin();
     ++it; // Skip "USER"
     std::string username = *it;
-    ++it; // Mode (ignored)
-    ++it; // Unused (servername, ignored)
-    ++it; // Realname (starts with :)
-    std::string realname = it->substr(it->find(":") + 1);
+
+    ++it; // mode
+    std::string modeStr = *it;
+    if (modeStr != "0") {
+        client->sendReply(IRC_SERVER " " ERR_NEEDMOREPARAMS " * USER :Mode must be 0");
+        return;
+    }
+
+    ++it; // Skip unused
+    ++it; // Move to realname token
+
+    std::string realname = *it;
+    if (realname[0] == ':') {
+        realname = realname.substr(1); // Strip ':' and use rest of line
+    } else {
+        // RFC 2812 allows a single-token realname; if more tokens exist
+        // the client should have used ':' prefix.
+        std::list<std::string>::iterator next = it;
+        ++next;
+        if (next != cmdList.end()) {
+            client->sendReply(IRC_SERVER " " ERR_NEEDMOREPARAMS " * USER :Use : for multi-word realnames");
+            return;
+        }
+    }
 
     client->setUsername(username);
-    client->setHostname(client->getIPAddress());
-
-    if (client->isAuthenticated() && !client->getNickname().empty()) {
-        client->setRegistered(true);
-        client->sendReply(":ircserv 001 " + client->getNickname() + " :Welcome to the IRC server!\r\n");
-        client->sendReply(":ircserv 002 " + client->getNickname() + " :Your host is ircserv, running version 1.0\r\n");
-        client->sendReply(":ircserv 003 " + client->getNickname() + " :This server was created on " + server->getCreatedTime() + "\r\n");
-    }
+    client->setHostname(client->getIPAddress());  // server-derived, not from USER
+    client->setRealname(realname);
+    client->setUserSet(true);
+    maybeRegister(client, server);
 }

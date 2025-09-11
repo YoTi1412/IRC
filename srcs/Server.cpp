@@ -240,13 +240,16 @@ Client* Server::createNewClient(int clientFd, sockaddr_in& clientAddr) {
     char ip[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(clientAddr.sin_addr), ip, INET_ADDRSTRLEN);
     client->setIPAddress(ip);
-    logNewConnection(clientFd, ip);
+    logNewConnection(clientFd, ip, ntohs(clientAddr.sin_port));
     return client;
 }
 
-void Server::logNewConnection(int clientFd, const char* ip) {
-    Logger::info("New client connected, fd: " + Utils::intToString(clientFd) + ", IP: " + ip);
+void Server::logNewConnection(int clientFd, const char* ip, int port) {
+    Logger::info("New client connected, fd: " + Utils::intToString(clientFd) +
+                 ", IP: " + ip +
+                 ", Port: " + Utils::intToString(port));
 }
+
 
 // ------------------- Client Data Handling -------------------
 
@@ -420,7 +423,15 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
 }
 
 void Server::sendUnknownCommandError(Client* client, const std::string& cmd) {
-    client->sendReply(":ircserv " ERR_UNKNOWNCOMMAND " " + (client->getNickname().empty() ? "*" : client->getNickname()) + " " + cmd + " :Unknown command\r\n");
+    std::string nick;
+
+    if (client->getNickname().empty()) {
+        nick = "*";
+    } else {
+        nick = client->getNickname();
+    }
+
+    client->sendReply(":ircserv " ERR_UNKNOWNCOMMAND " " + nick + " " + cmd + " :Unknown command\r\n");
     Logger::warning("Unknown command received from client " + client->getNickname() + ": " + cmd);
 }
 

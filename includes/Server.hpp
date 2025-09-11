@@ -19,7 +19,7 @@ private:
     std::string                     createdtime;
     std::vector<pollfd>             pollFds;
     std::map<int, Client*>          clients;
-    std::set<int>                   processedFds; // Track processed fds
+    std::set<int>                   processedFds;
 
     // Helper methods for setup
     void createSocket();
@@ -47,7 +47,7 @@ private:
     void handleAcceptResult(int clientFd, sockaddr_in& clientAddr);
     void configureNewClient(int clientFd, sockaddr_in& clientAddr);
     Client* createNewClient(int clientFd, sockaddr_in& clientAddr);
-    void logNewConnection(int clientFd, const char* ip);
+    void logNewConnection(int clientFd, const char* ip, int port);
 
     // Helper methods for client data handling
     void handleClientData(std::vector<pollfd>::iterator& it);

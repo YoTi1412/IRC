@@ -37,30 +37,53 @@ private:
     void logShutdown();
 
     // Helper methods for run
-    void initializeFileDescriptors();
     void pollForEvents(std::vector<pollfd>& pollCopy);
-    void processServerSocket();
-    void processClientSockets();
-    void acceptNewConnection();
-    void handleClientData(std::vector<pollfd>::iterator& it);
-    void cleanupDisconnectedClient(std::vector<pollfd>::iterator& it); // Updated: Removed bytesRead
     void processEvents(const std::vector<pollfd>& pollCopy);
     void handleClientPoll(int fd);
 
-    Server(const Server &server);
-    Server &operator=(const Server &server);
+    // Helper methods for client connection
+    void acceptNewConnection();
+    void handleAcceptResult(int clientFd, sockaddr_in& clientAddr);
+    void configureNewClient(int clientFd, sockaddr_in& clientAddr);
+    Client* createNewClient(int clientFd, sockaddr_in& clientAddr);
+    void logNewConnection(int clientFd, const char* ip);
+
+    // Helper methods for client data handling
+    void handleClientData(std::vector<pollfd>::iterator& it);
+    void processReadResult(int fd, char* buffer, int bytesRead);
+    void handleReadError(int fd);
+    void handleClientDisconnect(int fd);
+    std::vector<pollfd>::iterator findPollIterator(int fd);
+    void logDisconnect(int fd);
+    void handleReadSuccess(int fd, char* buffer, int bytesRead);
+    void appendToClientBuffer(int fd, const char* data);
+    void processClientBuffer(int fd);
+    bool hasNextMessage(const std::string& buffer);
+    std::string extractNextMessage(std::string& buffer);
+    std::string extractMessage(const std::string& buffer, size_t pos);
+    std::list<std::string> parseMessage(const std::string& message);
+    void tokenizePrefix(const std::string& prefix, std::list<std::string>& cmdList);
+
+    // Helper methods for command execution
     void executeCommand(int fd, std::list<std::string> cmdList);
+    void sendInvalidCommandError(int fd, const std::string& cmd);
+    void dispatchCommand(const std::string& cmd, std::list<std::string> cmdList, Client* client);
+    void sendUnknownCommandError(Client* client, const std::string& cmd);
+    bool isUpperCase(const std::string& str);
     void handleJoin(std::list<std::string> cmdList, Client* client);
     void handlePass(std::list<std::string> cmdList, Client* client, Server* server);
     void handleNick(std::list<std::string> cmdList, Client* client);
     void handleUser(std::list<std::string> cmdList, Client* client, Server* server);
 
+    Server(const Server &server);
+    Server &operator=(const Server &server);
+
 public:
     Server(const std::string &port, const std::string &password);
     ~Server();
 
-    void serverInit(); // Updated: Changed from setup to serverInit
-    void serverRun();  // Updated: Changed from run to serverRun
+    void serverInit();
+    void serverRun();
     static void sigHandler(int sig);
 
     const std::string &getName() const;

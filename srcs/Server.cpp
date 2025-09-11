@@ -71,6 +71,14 @@ void Server::logShutdown() {
     Logger::info("Server on port " + Utils::intToString(port) + " is shutting down.");
 }
 
+const std::string &Server::getPassword() const {
+    return password;
+}
+
+const std::string &Server::getCreatedTime() const {
+    return createdtime;
+}
+
 // ------------------- Socket Initialization -------------------
 
 void Server::serverInit() {

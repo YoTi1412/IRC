@@ -1,8 +1,9 @@
 #include "Command.hpp"
-#include "Replies.hpp"
+#include "Utils.hpp"
 #include "Logger.hpp"
+#include "Replies.hpp"
 
-void Server::handleJoin(std::list<std::string> cmdList, Client* client) {
+void handleJoin(std::list<std::string> cmdList, Client* client) {
     if (cmdList.size() < 2) {
         client->sendReply(":ircserv " ERR_NEEDMOREPARAMS " " + client->getNickname() + " JOIN :Not enough parameters\r\n");
         return;

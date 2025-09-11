@@ -1,55 +1,84 @@
 #include "Command.hpp"
 #include "Utils.hpp"
-#include "Client.hpp"
 #include "Logger.hpp"
+#include "Replies.hpp"
 
-void Server::handleNick(std::list<std::string> cmdList, Client* client) {
+static bool validateNickCommand(std::list<std::string>& cmdList, Client* client) {
     if (cmdList.size() < 2) {
-        client->sendReply(":ircserv 431 * :No nickname given\r\n"); // RFC 2812: ERR_NONICKNAMEGIVEN
-        return;
+        client->sendReply(IRC_SERVER " " ERR_NONICKNAMEGIVEN " * :No nickname given");
+        return false;
     }
-    // Only restrict NICK before registration for order
     if (!client->isAuthenticated() && client->isRegistered()) {
-        client->sendReply(":ircserv 462 " + client->getNickname() + " :Unauthorized command (already registered)\r\n");
-        return;
+        client->sendReply(IRC_SERVER " " ERR_ALREADYREGISTRED " " + client->getNickname() + " :Unauthorized command (already registered)");
+        return false;
     }
     if (!client->isAuthenticated()) {
-        client->sendReply(":ircserv 462 * :You must send PASS before NICK\r\n");
-        return;
+        client->sendReply(IRC_SERVER " " ERR_ALREADYREGISTRED " * :You must send PASS before NICK");
+        return false;
     }
     if (client->isUserSet() && !client->isRegistered()) {
-        client->sendReply(":ircserv 462 * :NICK must be sent before USER\r\n");
-        return;
+        client->sendReply(IRC_SERVER " " ERR_OUTOFORDER " * :NICK must be sent before USER");
+        return false;
     }
+    return true;
+}
 
-    std::list<std::string>::iterator it = cmdList.begin();
-    ++it; // Skip "NICK"
-    std::string nick = *it;
-    if (nick.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789[]\\`_^{|}") != std::string::npos) {
-        client->sendReply(":ircserv 432 * " + nick + " :Erroneous nickname\r\n"); // RFC 2812: ERR_ERRONEUSNICKNAME
-        return;
-    }
-    // Check for duplicate nickname (case-insensitive)
+static bool isValidNickFormat(const std::string& nick) {
+    // allowed characters per your previous code
+    static const std::string allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789[]\\`_^{|}";
+    return nick.find_first_not_of(allowed) == std::string::npos;
+}
+
+static bool isNickAvailable(const std::string& nick, Client* client, std::map<int, Client*>& clients) {
     for (std::map<int, Client*>::iterator it = clients.begin(); it != clients.end(); ++it) {
-        if (it->second != client && Utils::toLower(it->second->getNickname()) == Utils::toLower(nick)) {
-            client->sendReply(":ircserv 433 * " + nick + " :Nickname is already in use\r\n");
-            return;
+        Client* other = it->second;
+        if (other == client) continue;
+        if (Utils::toLower(other->getNickname()) == Utils::toLower(nick)) {
+            client->sendReply(IRC_SERVER " " ERR_NICKNAMEINUSE " * " + nick + " :Nickname is already in use");
+            return false;
         }
     }
+    return true;
+}
+
+static void updateNickAndNotify(Client* client, const std::string& nick) {
     std::string oldNick = client->getNickname();
     client->setNickname(nick);
     client->setNickSet(true);
+
     if (!oldNick.empty() && client->isRegistered()) {
-        client->sendReply(":" + oldNick + "!" + client->getUsername() + "@" + client->getHostname() + " NICK " + nick + "\r\n");
+        // announce nick change to the client
+        client->sendReply(":" + oldNick + "!" + client->getUsername() + "@" + client->getHostname() + " NICK " + nick);
+    } else {
+        client->sendReply(IRC_SERVER " " NOTICE_JOIN " " + nick + " :Nickname set to " + nick);
     }
-    else {
-        client->sendReply(":ircserv NOTICE " + nick + " :Nickname set to " + nick + "\r\n");
-    }
+}
+
+static void maybeRegister(Client* client) {
     if (client->isAuthenticated() && client->isNickSet() && client->isUserSet() && !client->isRegistered()) {
         client->setRegistered(true);
-        client->sendReply(":ircserv 001 " + client->getNickname() + " :Welcome to the IRC server!\r\n");
-        client->sendReply(":ircserv 002 " + client->getNickname() + " :Your host is ircserv, running version 1.0\r\n");
-        client->sendReply(":ircserv 003 " + client->getNickname() + " :This server was created on " + Utils::getFormattedTime() + "\r\n");
+        std::string nick = client->getNickname();
+        client->sendReply(IRC_SERVER " " RPL_WELCOME " " + nick + " :Welcome to the IRC server!");
+        client->sendReply(IRC_SERVER " " RPL_YOURHOST " " + nick + " :Your host is ircserv, running version 1.0");
+        client->sendReply(IRC_SERVER " " RPL_CREATED " " + nick + " :This server was created on " + Utils::getFormattedTime());
     }
-    // RFC 2812 Reference: Section 3.1.2 - NICK <nickname>
+}
+
+void handleNick(std::list<std::string> cmdList, Client* client, Server* server) {
+    if (!validateNickCommand(cmdList, client)) return;
+
+    std::list<std::string>::iterator it = cmdList.begin();
+    ++it; // skip "NICK"
+    std::string nick = *it;
+
+    if (!isValidNickFormat(nick)) {
+        client->sendReply(IRC_SERVER " " ERR_ERRONEUSNICKNAME " * " + nick + " :Erroneous nickname");
+        return;
+    }
+
+    std::map<int, Client*>& clients = server->getClients();
+    if (!isNickAvailable(nick, client, clients)) return;
+
+    updateNickAndNotify(client, nick);
+    maybeRegister(client);
 }

@@ -1,5 +1,10 @@
 #pragma once
 
+#define NOTICE_AUTH "NOTICE AUTH"
+#define NOTICE_JOIN "NOTICE"
+#define NICK_PREFIX ":"
+#define IRC_SERVER ":ircserv"
+
 // Client-Server Replies (001-099)
 #define RPL_WELCOME         "001"
 #define RPL_YOURHOST        "002"

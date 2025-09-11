@@ -1,13 +1,11 @@
 #pragma once
-
-#include "Includes.hpp"
 #include "Server.hpp"
 #include "Client.hpp"
-
-class Server;
+#include <list>
+#include <string>
 
 // Forward declarations for command handlers
 void handlePass(std::list<std::string> cmdList, Client* client, Server* server);
-void handleNick(std::list<std::string> cmdList, Client* client);
+void handleNick(std::list<std::string> cmdList, Client* client, Server* server);
 void handleUser(std::list<std::string> cmdList, Client* client, Server* server);
 void handleJoin(std::list<std::string> cmdList, Client* client);

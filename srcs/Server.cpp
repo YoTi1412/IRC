@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "Command.hpp"
 #include "Utils.hpp"
 #include "Client.hpp"
 #include "Logger.hpp"
@@ -77,6 +78,14 @@ const std::string &Server::getPassword() const {
 
 const std::string &Server::getCreatedTime() const {
     return createdtime;
+}
+
+std::map<int, Client*>& Server::getClients() {
+    return this->clients;
+}
+
+const std::map<int, Client*>& Server::getClients() const {
+    return this->clients;
 }
 
 // ------------------- Socket Initialization -------------------
@@ -400,7 +409,7 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
     if (cmd == "PASS") {
         handlePass(cmdList, client, this);
     } else if (cmd == "NICK") {
-        handleNick(cmdList, client);
+        handleNick(cmdList, client, this);
     } else if (cmd == "USER") {
         handleUser(cmdList, client, this);
     } else if (cmd == "JOIN") {

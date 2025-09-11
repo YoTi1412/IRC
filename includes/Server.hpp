@@ -2,6 +2,7 @@
 
 #include "Includes.hpp"
 #include "Replies.hpp"
+#include "Command.hpp"
 
 #define BUFFER_SIZE 1024
 
@@ -70,10 +71,6 @@ private:
     void dispatchCommand(const std::string& cmd, std::list<std::string> cmdList, Client* client);
     void sendUnknownCommandError(Client* client, const std::string& cmd);
     bool isUpperCase(const std::string& str);
-    void handleJoin(std::list<std::string> cmdList, Client* client);
-    void handlePass(std::list<std::string> cmdList, Client* client, Server* server);
-    void handleNick(std::list<std::string> cmdList, Client* client);
-    void handleUser(std::list<std::string> cmdList, Client* client, Server* server);
 
     Server(const Server &server);
     Server &operator=(const Server &server);
@@ -89,4 +86,6 @@ public:
     const std::string &getName() const;
     const std::string &getCreatedTime() const;
     const std::string &getPassword() const;
+    std::map<int, Client*>& getClients();
+    const std::map<int, Client*>& getClients() const;
 };

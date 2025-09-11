@@ -160,11 +160,14 @@ void Server::serverRun() {
 }
 
 void Server::pollForEvents(std::vector<pollfd>& pollCopy) {
-    if (poll(&pollCopy[0], pollCopy.size(), -1) < 0) {
+    int ret = poll(&pollCopy[0], pollCopy.size(), -1);
+    if (ret < 0 && errno != EINTR) {
         Logger::error("Poll failed: " + std::string(strerror(errno)));
         throw std::runtime_error("Poll failed: " + std::string(strerror(errno)));
     }
-    Logger::debug("Poll event checked for " + Utils::intToString(pollCopy.size()) + " file descriptors.");
+    if (ret >= 0) {
+        Logger::debug("Poll event checked for " + Utils::intToString(pollCopy.size()) + " file descriptors.");
+    }
 }
 
 void Server::processEvents(const std::vector<pollfd>& pollCopy) {
@@ -261,13 +264,16 @@ void Server::handleReadError(int fd) {
 }
 
 void Server::handleClientDisconnect(int fd) {
+    if (processedFds.find(fd) != processedFds.end()) {
+        return; // Already processed
+    }
     std::vector<pollfd>::iterator it = findPollIterator(fd);
-    if (it != pollFds.end() && processedFds.find(fd) == processedFds.end()) {
+    if (it != pollFds.end()) {
         logDisconnect(fd);
         close(it->fd);
         delete clients[fd];
         clients.erase(fd);
-        it = pollFds.erase(it);
+        pollFds.erase(it);
         processedFds.insert(fd);
     }
 }
@@ -386,7 +392,7 @@ void Server::executeCommand(int fd, std::list<std::string> cmdList) {
 }
 
 void Server::sendInvalidCommandError(int fd, const std::string& cmd) {
-    clients[fd]->sendReply(":ircserv " ERR_NEEDMOREPARAMS " * " + cmd + " :Commands must be uppercase\r\n");
+    clients[fd]->sendReply(":ircserv " ERR_UNKNOWNCOMMAND " * " + cmd + " :Commands must be uppercase\r\n");
     Logger::warning("Invalid command received from fd " + Utils::intToString(fd) + ": " + cmd);
 }
 

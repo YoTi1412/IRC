@@ -1,8 +1,17 @@
 #include "Command.hpp"
+#include "Replies.hpp"
 
-void handlePass(std::list<std::string> cmdList, Client* client, Server* server) {
+void Server::handlePass(std::list<std::string> cmdList, Client* client, Server* server) {
     if (cmdList.size() != 2) {
-        client->sendReply(":ircserv 461 * PASS :Not enough parameters\r\n"); // RFC 2812: ERR_NEEDMOREPARAMS
+        client->sendReply(":ircserv " ERR_NEEDMOREPARAMS " * PASS :Not enough parameters\r\n");
+        return;
+    }
+    if (client->isAuthenticated()) {
+        client->sendReply(":ircserv " ERR_ALREADYREGISTRED " * :PASS already accepted, proceed with NICK and USER\r\n");
+        return;
+    }
+    if (client->isNickSet() || client->isUserSet()) {
+        client->sendReply(":ircserv " ERR_OUTOFORDER " * :PASS must be sent before NICK or USER\r\n");
         return;
     }
 
@@ -10,10 +19,10 @@ void handlePass(std::list<std::string> cmdList, Client* client, Server* server) 
     ++it; // Skip "PASS"
     std::string pass = *it;
 
-    if (pass != server->getPassword()) {  // Check against Server's password
-        client->sendReply(":ircserv 464 * :Password incorrect\r\n"); // RFC 2812: ERR_PASSWDMISMATCH
+    if (pass != server->getPassword()) {
+        client->sendReply(":ircserv " ERR_PASSWDMISMATCH " * :Password incorrect\r\n");
     } else {
-        client->setAuthenticated(); // Changed to setAuthenticated
+        client->setAuthenticated();
         client->sendReply(":ircserv NOTICE AUTH :Password accepted\r\n");
     }
 }

@@ -142,39 +142,84 @@ void Server::handleClientData(std::vector<pollfd>::iterator& it) {
         return;
     } else if (bytesRead == 0) {
         if (processedFds.find(it->fd) == processedFds.end()) {
-            cleanupDisconnectedClient(it);
+            cleanupDisconnectedClient(it); // Fixed: Matches updated declaration
             processedFds.insert(it->fd);
         }
     } else {
         tempBuffer[bytesRead] = '\0';
         Logger::debug("Read " + Utils::intToString(bytesRead) + " bytes from fd " + Utils::intToString(it->fd) + ": " + std::string(tempBuffer));
         if (clients.find(it->fd) != clients.end()) {
-            clients[it->fd]->getCommandBuffer() += std::string(tempBuffer); // Append to client's buffer
-            clients[it->fd]->processCommand(""); // Trigger processing
-            // Dispatch commands after buffer processing
-            std::list<std::string> cmdList = Utils::splitString(clients[it->fd]->getCommandBuffer());
-            if (!cmdList.empty()) {
-                std::string cmd = *cmdList.begin();
-                std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
-                executeCommand(it->fd, cmdList);
+            Client* client = clients[it->fd];
+            client->getCommandBuffer() += std::string(tempBuffer);
+
+            std::string& buffer = client->getCommandBuffer();
+            while (true) {
+                size_t pos = buffer.find('\n');
+                if (pos == std::string::npos) break;
+
+                bool has_cr = (pos > 0 && buffer[pos - 1] == '\r');
+                size_t msg_end = has_cr ? pos - 1 : pos;
+                size_t term_size = has_cr ? 2 : 1;
+
+                std::string message = buffer.substr(0, msg_end);
+
+                // Parse message into cmdList
+                std::list<std::string> cmdList;
+                size_t colon_pos = message.find(" :");
+                std::string prefix;
+                std::string trailing;
+                if (colon_pos != std::string::npos) {
+                    prefix = message.substr(0, colon_pos);
+                    trailing = message.substr(colon_pos + 2);
+                } else {
+                    prefix = message;
+                }
+
+                std::istringstream iss(prefix);
+                std::string token;
+                while (iss >> token) {
+                    cmdList.push_back(token);
+                }
+
+                if (!trailing.empty()) {
+                    cmdList.push_back(trailing);
+                }
+
+                // Execute if cmdList not empty
+                if (!cmdList.empty()) {
+                    executeCommand(it->fd, cmdList);
+                }
+
+                // Erase processed part
+                buffer.erase(0, msg_end + term_size);
             }
         }
     }
-    // RFC 2812 Reference: Section 2.3 - Handle partial TCP data
 }
 
 void Server::executeCommand(int fd, std::list<std::string> cmdList) {
     if (cmdList.empty()) return;
     std::string cmd = *cmdList.begin();
-    std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper);
+    // Check if command is not uppercase
+    for (size_t i = 0; i < cmd.length(); ++i) {
+        if (!std::isupper(cmd[i])) {
+            Client* client = clients[fd];
+            client->sendReply(":ircserv 461 * " + cmd + " :Commands must be uppercase\r\n"); // ERR_NEEDMOREPARAMS with custom message
+            return;
+        }
+    }
+    std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::toupper); // Ensure internal consistency
     Client* client = clients[fd];
+    Server* server = this;
 
     if (cmd == "PASS") {
-        handlePass(cmdList, client, this); // Updated to remove fd
+        handlePass(cmdList, client, this);
     } else if (cmd == "NICK") {
-        handleNick(fd, cmdList, client);
+        handleNick(cmdList, client);
     } else if (cmd == "USER") {
-        handleUser(fd, cmdList, client);
+        handleUser(cmdList, client, server);
+    } else if (cmd == "JOIN") {
+        handleJoin(cmdList, client);
     } else {
         client->sendReply(":ircserv 421 " + (client->getNickname().empty() ? "*" : client->getNickname()) + " " + cmd + " :Unknown command\r\n");
     }
@@ -231,3 +276,5 @@ void Server::serverInit() {
     initPollFd();
     Logger::info("Server initialized on port " + Utils::intToString(port));
 }
+
+const std::string& Server::getPassword() const { return password; }

@@ -12,6 +12,8 @@ private:
     bool registered;
     bool authenticated;
     std::string commandBuffer;
+    bool nickSet;  // New flag to track if NICK is set
+    bool userSet;  // New flag to track if USER is set
 
 public:
     Client();
@@ -21,25 +23,24 @@ public:
     std::string getIPAddress() const;
     std::string getNickname() const;
     std::string getUsername() const;
-    bool isAuthenticated() const; // Added getter for authenticated status
-    void setAuthenticated(); // Renamed isAuthenticated to setAuthenticated for clarity
+    std::string getHostname() const;
     bool isRegistered() const;
-    void setRegistered();
+    bool isAuthenticated() const;
+    bool isNickSet() const;
+    bool isUserSet() const;
 
+    void setAuthenticated();
+    void setRegistered();
     void setFd(int fd);
     void setIPAddress(const std::string& IPAddress);
     void setNickname(const std::string& nickname);
-    void setHostname(const std::string& hostname); // Changed to const reference
+    void setHostname(const std::string& hostname);
     void setUsername(const std::string& username);
     void setRegistered(bool status);
+    void setNickSet(bool nickSet);  // Removed const
+    void setUserSet(bool userSet);  // Removed const
 
-    // IRC command handling
     void processCommand(const std::string& command);
-
-    // Send a formatted IRC reply to the client
-    // RFC 2812 Reference: Section 2.3 - Message Format
     void sendReply(const std::string& reply);
-
-    // Access command buffer
     std::string& getCommandBuffer();
 };

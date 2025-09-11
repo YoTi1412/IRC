@@ -1,8 +1,7 @@
 #include "Utils.hpp"
 #include "Server.hpp"
 
-bool Utils::isValidPort(const char* portStr)
-{
+bool Utils::isValidPort(const char* portStr) {
     for (size_t i = 0; portStr[i]; i++)
         if (!isdigit(portStr[i]))
             return false;
@@ -14,30 +13,25 @@ bool Utils::isValidPort(const char* portStr)
     return true;
 }
 
-bool Utils::isValidPassword(const std::string& password)
-{
+bool Utils::isValidPassword(const std::string& password) {
     if (password.empty()) return false;
-    for (size_t i = 0; i < password.size(); i++)
-    {
+    for (size_t i = 0; i < password.size(); i++) {
         unsigned char c = static_cast<unsigned char>(password[i]);
-        if (!std::isprint(c) || std::isspace(c))
-        {
+        if (!std::isprint(c) || std::isspace(c)) {
             return false;
         }
     }
     return true;
 }
 
-std::string Utils::getFormattedTime()
-{
+std::string Utils::getFormattedTime() {
     time_t now = time(0);
     char buf[80];
     strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", localtime(&now));
     return std::string(buf);
 }
 
-void Utils::setupSignalHandler()
-{
+void Utils::setupSignalHandler() {
     signal(SIGINT, Server::sigHandler);
     signal(SIGQUIT, Server::sigHandler);
 }
@@ -57,15 +51,24 @@ int Utils::setnonblocking(int client_fd) {
     return 0;
 }
 
-std::list<std::string> Utils::splitString(std::string &cmd) {
-    std::list<std::string> lst;
-    std::istringstream stm(cmd);
-    std::string token;
-
-    while (std::getline(stm, token, ' ')) {
-        if (!token.empty()) {
-            lst.push_back(token);
+std::list<std::string> Utils::splitCommand(const std::string& buffer) {
+    std::list<std::string> cmdList;
+    size_t pos = buffer.find("\r\n");
+    if (pos != std::string::npos) {
+        std::string cmd = buffer.substr(0, pos);
+        if (!cmd.empty()) {
+            std::istringstream iss(cmd);
+            std::string token;
+            while (iss >> token) {
+                cmdList.push_back(token);
+            }
         }
     }
-    return lst;
+    return cmdList;
+}
+
+std::string Utils::toLower(const std::string& str) {
+    std::string lowerStr = str;
+    std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
+    return lowerStr;
 }

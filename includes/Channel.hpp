@@ -5,6 +5,8 @@
 #include "Utils.hpp"
 #include "Logger.hpp"
 
+#define MAX_MESSAGE_LENGTH 512
+
 class Client;
 
 class Channel {

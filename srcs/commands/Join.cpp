@@ -4,27 +4,39 @@
 #include "Replies.hpp"
 #include "Channel.hpp"
 
+static bool isValidChannelName(const std::string& name) {
+    if (name.empty() || name.length() > 50 || name[0] != '#') { // RFC 2812 max 50 chars
+        return false;
+    }
+    for (size_t i = 0; i < name.length(); ++i) {
+        if (name[i] == ' ' || name[i] == ',' || name[i] == '\7') {
+            return false;
+        }
+    }
+    return name.length() > 1; // Ensure non-empty name after '#'
+}
+
 static bool validateJoin(std::list<std::string>& cmdList, Client* client) {
     if (cmdList.size() < 2) {
-        std::ostringstream oss;
-        oss << IRC_SERVER << " " << ERR_NEEDMOREPARAMS << " " << client->getNickname() << " JOIN :Not enough parameters";
-        client->sendReply(oss.str());
+        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NEEDMOREPARAMS + " " +
+                          (client->getNickname().empty() ? "*" : client->getNickname()) +
+                          " JOIN :Not enough parameters");
         return false;
     }
     if (!client->isRegistered()) {
-        std::ostringstream oss;
-        oss << IRC_SERVER << " " << ERR_NOTREGISTERED << " " << client->getNickname() << " :You have not registered";
-        client->sendReply(oss.str());
+        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOTREGISTERED + " " +
+                          (client->getNickname().empty() ? "*" : client->getNickname()) +
+                          " :You have not registered");
         return false;
     }
     return true;
 }
 
 static void processJoin(const std::string& channelName, const std::string& key, Client* client, Server* server) {
-    if (channelName.empty() || channelName[0] != '#') {
-        std::ostringstream oss;
-        oss << IRC_SERVER << " " << ERR_BADCHANMASK << " " << client->getNickname() << " " << channelName << " :Bad Channel Mask";
-        client->sendReply(oss.str());
+    (void)key; // Suppress unused parameter warning, to be used later for key handling
+    if (!isValidChannelName(channelName)) {
+        client->sendReply(std::string(IRC_SERVER) + " " + ERR_BADCHANMASK + " " +
+                          client->getNickname() + " " + channelName + " :Invalid channel name");
         return;
     }
 
@@ -34,28 +46,13 @@ static void processJoin(const std::string& channelName, const std::string& key, 
     if (it == channels.end()) {
         channel = new Channel(channelName, client);
         channels[channelName] = channel;
-        Logger::info("Channel " + channelName + " created by " + client->getNickname());
+        // Logging moved to Channel constructor, avoid duplicate here
     } else {
         channel = it->second;
         if (channel->isMember(client)) {
-            return; // Already in channel
-        }
-        if (channel->getInviteOnly() && !channel->isInvited(client->getFd())) {
-            std::ostringstream oss;
-            oss << IRC_SERVER << " " << ERR_INVITEONLYCHAN << " " << client->getNickname() << " " << channelName << " :Cannot join channel (+i)";
-            client->sendReply(oss.str());
-            return;
-        }
-        if (channel->getKeyProtected() && (key.empty() || key != channel->getKey())) {
-            std::ostringstream oss;
-            oss << IRC_SERVER << " " << ERR_BADCHANNELKEY << " " << client->getNickname() << " " << channelName << " :Bad channel key";
-            client->sendReply(oss.str());
-            return;
-        }
-        if (channel->getLimited() && channel->getLimit() <= channel->getMemberCount()) {
-            std::ostringstream oss;
-            oss << IRC_SERVER << " " << ERR_CHANNELISFULL << " " << client->getNickname() << " " << channelName << " :Cannot join channel (+l)";
-            client->sendReply(oss.str());
+            client->sendReply(std::string(IRC_SERVER) + " " + ERR_USERONCHANNEL + " " +
+                                          client->getNickname() + " " + client->getNickname() + " " +
+                                          channelName + " :is already on channel");
             return;
         }
         channel->addMember(client);
@@ -63,21 +60,17 @@ static void processJoin(const std::string& channelName, const std::string& key, 
 
     std::string userIdent = client->getNickname() + "!" + client->getUsername() + "@" + client->getHostname();
     std::string joinMsg = ":" + userIdent + " JOIN " + channelName;
-
     channel->broadcast(joinMsg, NULL);
 
     if (!channel->getTopic().empty()) {
-        std::ostringstream oss;
-        oss << IRC_SERVER << " " << RPL_TOPIC << " " << client->getNickname() << " " << channelName << " :" << channel->getTopic();
-        client->sendReply(oss.str());
+        client->sendReply(std::string(IRC_SERVER) + " " + RPL_TOPIC + " " +
+                          client->getNickname() + " " + channelName + " :" + channel->getTopic());
     }
 
-    std::ostringstream oss;
-    oss << IRC_SERVER << " " << RPL_NAMREPLY << " " << client->getNickname() << " = " << channelName << " :" << channel->getMemberList();
-    client->sendReply(oss.str());
-    oss.str("");
-    oss << IRC_SERVER << " " << RPL_ENDOFNAMES << " " << client->getNickname() << " " << channelName << " :End of NAMES list";
-    client->sendReply(oss.str());
+    client->sendReply(std::string(IRC_SERVER) + " " + RPL_NAMREPLY + " " +
+                      client->getNickname() + " = " + channelName + " :" + channel->getMemberList());
+    client->sendReply(std::string(IRC_SERVER) + " " + RPL_ENDOFNAMES + " " +
+                      client->getNickname() + " " + channelName + " :End of NAMES list");
 
     Logger::info(client->getNickname() + " joined " + channelName);
 }

@@ -3,7 +3,6 @@
 #include "Logger.hpp"
 #include "Replies.hpp"
 #include "Channel.hpp"
-#include <sstream>  // For std::ostringstream
 
 static bool validateJoin(std::list<std::string>& cmdList, Client* client) {
     if (cmdList.size() < 2) {
@@ -21,7 +20,7 @@ static bool validateJoin(std::list<std::string>& cmdList, Client* client) {
     return true;
 }
 
-static void processJoin(const std::string& channelName, Client* client, Server* server) {
+static void processJoin(const std::string& channelName, const std::string& key, Client* client, Server* server) {
     if (channelName.empty() || channelName[0] != '#') {
         std::ostringstream oss;
         oss << IRC_SERVER << " " << ERR_BADCHANMASK << " " << client->getNickname() << " " << channelName << " :Bad Channel Mask";
@@ -35,6 +34,7 @@ static void processJoin(const std::string& channelName, Client* client, Server* 
     if (it == channels.end()) {
         channel = new Channel(channelName, client);
         channels[channelName] = channel;
+        Logger::info("Channel " + channelName + " created by " + client->getNickname());
     } else {
         channel = it->second;
         if (channel->isMember(client)) {
@@ -46,7 +46,12 @@ static void processJoin(const std::string& channelName, Client* client, Server* 
             client->sendReply(oss.str());
             return;
         }
-        // TODO: Add key check (ERR_BADCHANNELKEY if key mismatch)
+        if (channel->getKeyProtected() && (key.empty() || key != channel->getKey())) {
+            std::ostringstream oss;
+            oss << IRC_SERVER << " " << ERR_BADCHANNELKEY << " " << client->getNickname() << " " << channelName << " :Bad channel key";
+            client->sendReply(oss.str());
+            return;
+        }
         if (channel->getLimited() && channel->getLimit() <= channel->getMemberCount()) {
             std::ostringstream oss;
             oss << IRC_SERVER << " " << ERR_CHANNELISFULL << " " << client->getNickname() << " " << channelName << " :Cannot join channel (+l)";
@@ -56,31 +61,23 @@ static void processJoin(const std::string& channelName, Client* client, Server* 
         channel->addMember(client);
     }
 
-    // Build user ident
     std::string userIdent = client->getNickname() + "!" + client->getUsername() + "@" + client->getHostname();
-
-    // Broadcast JOIN
     std::string joinMsg = ":" + userIdent + " JOIN " + channelName;
-    channel->broadcast(joinMsg, client);
 
-    // Send topic if set
+    channel->broadcast(joinMsg, NULL);
+
     if (!channel->getTopic().empty()) {
         std::ostringstream oss;
         oss << IRC_SERVER << " " << RPL_TOPIC << " " << client->getNickname() << " " << channelName << " :" << channel->getTopic();
         client->sendReply(oss.str());
     }
 
-    // Send names list
-    {
-        std::ostringstream oss;
-        oss << IRC_SERVER << " " << RPL_NAMREPLY << " " << client->getNickname() << " = " << channelName << " :" << channel->getMemberList();
-        client->sendReply(oss.str());
-    }
-    {
-        std::ostringstream oss;
-        oss << IRC_SERVER << " " << RPL_ENDOFNAMES << " " << client->getNickname() << " " << channelName << " :End of NAMES list";
-        client->sendReply(oss.str());
-    }
+    std::ostringstream oss;
+    oss << IRC_SERVER << " " << RPL_NAMREPLY << " " << client->getNickname() << " = " << channelName << " :" << channel->getMemberList();
+    client->sendReply(oss.str());
+    oss.str("");
+    oss << IRC_SERVER << " " << RPL_ENDOFNAMES << " " << client->getNickname() << " " << channelName << " :End of NAMES list";
+    client->sendReply(oss.str());
 
     Logger::info(client->getNickname() + " joined " + channelName);
 }
@@ -90,7 +87,16 @@ void handleJoin(std::list<std::string> cmdList, Client* client, Server* server) 
 
     std::list<std::string>::iterator it = cmdList.begin();
     ++it; // Skip "JOIN"
-    std::string channelName = *it; // Handle single channel for now
+    std::string channelsStr = *it;
+    std::list<std::string> channels = Utils::split(channelsStr, ',');
+    std::list<std::string> keys;
+    if (++it != cmdList.end()) {
+        keys = Utils::split(*it, ',');
+    }
 
-    processJoin(channelName, client, server);
+    std::list<std::string>::iterator keyIt = keys.begin();
+    for (std::list<std::string>::iterator chanIt = channels.begin(); chanIt != channels.end(); ++chanIt) {
+        std::string key = (keyIt != keys.end()) ? *keyIt++ : "";
+        processJoin(*chanIt, key, client, server);
+    }
 }

@@ -73,3 +73,14 @@ std::string Utils::toLower(const std::string& str) {
     std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
     return lowerStr;
 }
+
+
+std::list<std::string> Utils::split(const std::string& str, char delim) {
+    std::list<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(str);
+    while (std::getline(tokenStream, token, delim)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}

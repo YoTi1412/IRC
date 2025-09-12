@@ -294,28 +294,32 @@ void Server::handleReadError(int fd) {
 }
 
 void Server::handleClientDisconnect(int fd) {
-    if (processedFds.find(fd) != processedFds.end()) {
-        return; // Already processed
-    }
-    std::map<std::string, Channel*>::iterator chanIt = channels.begin();
-    while (chanIt != channels.end()) {
-        chanIt->second->removeMember(clients[fd]);
-        if (chanIt->second->getMemberCount() == 0) {
-            delete chanIt->second;
-            channels.erase(chanIt++);  // Erase and advance iterator safely
+    Client* client = clients[fd];
+    if (client) {
+        std::map<std::string, Channel*>::iterator chanIt = channels.begin();
+        while (chanIt != channels.end()) {
+            Channel* channel = chanIt->second;
+            channel->removeMember(client);
+            if (channel->getMemberCount() == 0) {
+                delete channel;
+                channels.erase(chanIt++);
+            } else {
+                ++chanIt;
+            }
         }
-        else
-        {
-            ++chanIt;
-        }
-    }
-    std::vector<pollfd>::iterator it = findPollIterator(fd);
-    if (it != pollFds.end()) {
-        close(it->fd);
-        delete clients[fd];
+        close(fd);
+        delete client;
         clients.erase(fd);
-        pollFds.erase(it);
-        processedFds.insert(fd);
+        std::vector<pollfd>::iterator pollIt = pollFds.begin();
+        while (pollIt != pollFds.end()) {
+            if (pollIt->fd == fd) {
+                pollFds.erase(pollIt);
+                break;
+            } else {
+                ++pollIt;
+            }
+        }
+        Logger::info("Client disconnected, fd: " + Utils::intToString(fd));
     }
 }
 
@@ -457,6 +461,8 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
         handleUser(cmdList, client, this);
     } else if (cmd == "JOIN") {
         handleJoin(cmdList, client, this);
+    } else if (cmd == "PRIVMSG") {
+        handlePrivmsg(cmdList, client, this);
     } else {
         sendUnknownCommandError(client, cmd);
     }

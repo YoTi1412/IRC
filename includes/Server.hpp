@@ -85,6 +85,8 @@ public:
     void serverInit();
     void serverRun();
     static void sigHandler(int sig);
+    void setReuseAddr();
+
 
     const std::string &getName() const;
     const std::string &getCreatedTime() const;

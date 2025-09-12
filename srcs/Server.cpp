@@ -111,6 +111,7 @@ void Server::serverInit() {
     createSocket();
     configureServerAddress();
     setSocketTimeout();
+    setReuseAddr();
     bindSocket();
     listenOnSocket();
     initPollFd();
@@ -143,6 +144,15 @@ void Server::setSocketTimeout() {
         throw std::runtime_error("Failed to set socket timeout: " + std::string(strerror(errno)));
     }
     Logger::debug("Socket timeout set to 5 seconds.");
+}
+
+void Server::setReuseAddr() {
+    int optval = 1;
+    if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
+        Logger::error("Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
+        throw std::runtime_error("Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
+    }
+    Logger::debug("SO_REUSEADDR option enabled on socket.");
 }
 
 void Server::bindSocket() {

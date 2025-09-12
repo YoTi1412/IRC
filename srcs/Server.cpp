@@ -46,8 +46,25 @@ void Server::validatePassword(const std::string &password) {
 
 Server::~Server() {
     cleanupAllClients();
+    cleanupAllChannels();
     closeSocket();
     logShutdown();
+}
+
+void Server::cleanupAllChannels() {
+    for (std::map<std::string, Channel*>::iterator it = channels.begin(); it != channels.end(); ++it) {
+        delete it->second;
+    }
+    channels.clear();
+    Logger::info("All channels cleaned up.");
+}
+
+std::map<std::string, Channel*>& Server::getChannels() {
+    return channels;
+}
+
+const std::map<std::string, Channel*>& Server::getChannels() const {
+    return channels;
 }
 
 void Server::cleanupAllClients() {
@@ -232,6 +249,7 @@ void Server::configureNewClient(int clientFd, sockaddr_in& clientAddr) {
     pollFds.push_back(pfd);
     Client* client = createNewClient(clientFd, clientAddr);
     clients[clientFd] = client;
+    Client::sendWelcomeHowTo(pfd.fd);
 }
 
 Client* Server::createNewClient(int clientFd, sockaddr_in& clientAddr) {
@@ -278,6 +296,18 @@ void Server::handleReadError(int fd) {
 void Server::handleClientDisconnect(int fd) {
     if (processedFds.find(fd) != processedFds.end()) {
         return; // Already processed
+    }
+    std::map<std::string, Channel*>::iterator chanIt = channels.begin();
+    while (chanIt != channels.end()) {
+        chanIt->second->removeMember(clients[fd]);
+        if (chanIt->second->getMemberCount() == 0) {
+            delete chanIt->second;
+            channels.erase(chanIt++);  // Erase and advance iterator safely
+        }
+        else
+        {
+            ++chanIt;
+        }
     }
     std::vector<pollfd>::iterator it = findPollIterator(fd);
     if (it != pollFds.end()) {
@@ -426,7 +456,7 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
     } else if (cmd == "USER") {
         handleUser(cmdList, client, this);
     } else if (cmd == "JOIN") {
-        handleJoin(cmdList, client);
+        handleJoin(cmdList, client, this);
     } else {
         sendUnknownCommandError(client, cmd);
     }

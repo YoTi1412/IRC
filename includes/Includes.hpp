@@ -22,11 +22,3 @@
 #include <unistd.h>
 
 #include <signal.h>
-
-// Forward declarations
-class Server;
-class Client;
-class Channel;
-class Message;
-class Utils;
-class Logger;

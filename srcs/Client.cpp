@@ -114,3 +114,17 @@ void Client::sendReply(const std::string& reply) {
     ssize_t bytesSent = send(fd, formattedReply.c_str(), formattedReply.length(), 0);
     handleSendResult(bytesSent, formattedReply);
 }
+
+void Client::sendWelcomeHowTo(int fd)
+{
+    const char *lines[] = {
+        ":ircserv 001 * :Welcome!  Please register in this exact order:\r\n",
+        ":ircserv 002 * :  PASS <server-password>\r\n",
+        ":ircserv 003 * :  NICK <nickname>\r\n",
+        ":ircserv 004 * :  USER <user> 0 * :<real name>\r\n",
+        ":ircserv 005 * :Then /JOIN channels and chat.  Commands must be UPPERCASE.\r\n",
+        NULL
+    };
+    for (const char **p = lines; *p; ++p)
+        send(fd, *p, strlen(*p), MSG_NOSIGNAL);
+}

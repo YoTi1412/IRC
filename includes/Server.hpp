@@ -3,6 +3,7 @@
 #include "Includes.hpp"
 #include "Replies.hpp"
 #include "Command.hpp"
+#include "Channel.hpp"
 
 #define BUFFER_SIZE 1024
 
@@ -20,6 +21,7 @@ private:
     std::vector<pollfd>             pollFds;
     std::map<int, Client*>          clients;
     std::set<int>                   processedFds;
+    std::map<std::string, Channel*> channels;
 
     // Helper methods for setup
     void createSocket();
@@ -71,6 +73,8 @@ private:
     void sendUnknownCommandError(Client* client, const std::string& cmd);
     bool isUpperCase(const std::string& str);
 
+    void cleanupAllChannels();
+
     Server(const Server &server);
     Server &operator=(const Server &server);
 
@@ -87,4 +91,6 @@ public:
     const std::string &getPassword() const;
     std::map<int, Client*>& getClients();
     const std::map<int, Client*>& getClients() const;
+    std::map<std::string, Channel*>& getChannels();
+    const std::map<std::string, Channel*>& getChannels() const;
 };

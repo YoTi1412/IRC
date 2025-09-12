@@ -25,9 +25,10 @@ bool Utils::isValidPassword(const std::string& password) {
 }
 
 std::string Utils::getFormattedTime() {
-    time_t now = time(0);
-    char buf[80];
-    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    time_t now = time(NULL);
+    struct tm* timeinfo = localtime(&now);
+    char buf[32];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", timeinfo);
     return std::string(buf);
 }
 

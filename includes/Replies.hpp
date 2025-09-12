@@ -10,6 +10,9 @@
 #define RPL_YOURHOST        "002"
 #define RPL_CREATED         "003"
 #define RPL_MYINFO          "004"
+#define RPL_TOPIC           "332"  // Added: Channel topic reply
+#define RPL_NAMREPLY        "353"  // Added: Names list reply
+#define RPL_ENDOFNAMES      "366"  // Added: End of names list
 
 // Error Replies (400-599)
 #define ERR_NOSUCHNICK      "401"
@@ -24,6 +27,7 @@
 #define ERR_NOTONCHANNEL    "442"
 #define ERR_USERONCHANNEL   "443"
 #define ERR_NOLOGIN         "444"
+#define ERR_NOTREGISTERED   "451"  // Added: Client not registered
 #define ERR_NEEDMOREPARAMS  "461"
 #define ERR_ALREADYREGISTRED "462"
 #define ERR_NOPERMFORHOST   "463"

@@ -116,7 +116,7 @@ void handleUser(std::list<std::string> cmdList, Client* client, Server* server) 
     }
 
     client->setUsername(username);
-    client->setHostname(client->getIPAddress());  // server-derived, not from USER
+    client->setHostname(client->getIPAddress());
     client->setRealname(realname);
     client->setUserSet(true);
     maybeRegister(client, server);

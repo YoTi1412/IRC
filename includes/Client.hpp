@@ -67,4 +67,5 @@ public:
 
     void appendToCommandBuffer(const std::string& data);
     void sendReply(const std::string& reply);
+    static void sendWelcomeHowTo(int fd);
 };

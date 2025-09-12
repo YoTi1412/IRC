@@ -55,7 +55,6 @@ private:
     void handleReadError(int fd);
     void handleClientDisconnect(int fd);
     std::vector<pollfd>::iterator findPollIterator(int fd);
-    void logDisconnect(int fd);
     void handleReadSuccess(int fd, char* buffer, int bytesRead);
     void appendToClientBuffer(int fd, const char* data);
     void processClientBuffer(int fd);

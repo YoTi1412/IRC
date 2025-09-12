@@ -281,7 +281,6 @@ void Server::handleClientDisconnect(int fd) {
     }
     std::vector<pollfd>::iterator it = findPollIterator(fd);
     if (it != pollFds.end()) {
-        logDisconnect(fd);
         close(it->fd);
         delete clients[fd];
         clients.erase(fd);
@@ -301,13 +300,24 @@ std::vector<pollfd>::iterator Server::findPollIterator(int fd) {
     return pollFds.end();
 }
 
-void Server::logDisconnect(int fd) {
-    Logger::info("Client disconnected, fd: " + Utils::intToString(fd));
-}
-
-void Server::handleReadSuccess(int fd, char* buffer, int bytesRead) {
+void Server::handleReadSuccess(int fd, char* buffer, int bytesRead)
+{
     buffer[bytesRead] = '\0';
-    Logger::debug("Read " + Utils::intToString(bytesRead) + " bytes from fd " + Utils::intToString(fd) + ": " + buffer);
+    Logger::debug("Read " + Utils::intToString(bytesRead) + " bytes from fd "
+        + Utils::intToString(fd) + ": " + buffer);
+    if (strncmp(buffer, "GET ", 4) == 0 || strncmp(buffer, "POST ", 5) == 0)
+    {
+        const char *http =
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/plain\r\n"
+            "Content-Length: 29\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            "This is an IRC server mate ;)";
+        send(fd, http, strlen(http), MSG_NOSIGNAL);
+        handleClientDisconnect(fd);
+        return;
+    }
     appendToClientBuffer(fd, buffer);
     processClientBuffer(fd);
 }

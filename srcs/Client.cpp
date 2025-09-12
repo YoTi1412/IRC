@@ -83,14 +83,29 @@ std::string Client::formatReply(const std::string& reply) {
     return formatted;
 }
 
-// Sending Reply
-void Client::handleSendResult(ssize_t bytesSent, const std::string& formattedReply) {
-    if (bytesSent < 0) {
-        Logger::error(LOG_SEND_FAILED(fd, strerror(errno)));
-    } else if (static_cast<size_t>(bytesSent) < formattedReply.length()) {
+void Client::handleSendResult(ssize_t bytesSent, const std::string& formattedReply)
+{
+    if (bytesSent < 0)
+    {
+        if (errno == EPIPE || errno == ECONNRESET)
+        {
+            Logger::debug("Peer already closed fd " + Utils::intToString(fd));
+        }
+        else
+        {
+            Logger::error(LOG_SEND_FAILED(fd, strerror(errno)));
+        }
+        return;
+    }
+
+    if (static_cast<size_t>(bytesSent) < formattedReply.length())
+    {
         Logger::warning(LOG_PARTIAL_SEND(fd, bytesSent, formattedReply.length()));
-    } else {
-        Logger::debug("Sent " + Utils::intToString(bytesSent) + " bytes to fd " + Utils::intToString(fd) + ": " + formattedReply);
+    }
+    else
+    {
+        Logger::debug("Sent " + Utils::intToString(bytesSent) +
+                      " bytes to fd " + Utils::intToString(fd) + ": " + formattedReply);
     }
 }
 

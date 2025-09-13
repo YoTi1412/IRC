@@ -95,4 +95,5 @@ public:
     const std::map<int, Client*>& getClients() const;
     std::map<std::string, Channel*>& getChannels();
     const std::map<std::string, Channel*>& getChannels() const;
+    Client* getClientByNickname(const std::string& nickname) const;
 };

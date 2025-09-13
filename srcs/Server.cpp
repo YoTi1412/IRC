@@ -105,6 +105,18 @@ const std::map<int, Client*>& Server::getClients() const {
     return this->clients;
 }
 
+
+Client* Server::getClientByNickname(const std::string& nickname) const
+{
+    for (std::map<int, Client*>::const_iterator it = clients.begin(); it != clients.end(); ++it)
+    {
+        if (it->second->getNickname() == nickname)
+            return it->second;
+    }
+    return NULL;
+}
+
+
 // ------------------- Socket Initialization -------------------
 
 void Server::serverInit() {
@@ -473,7 +485,10 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
         handleJoin(cmdList, client, this);
     } else if (cmd == "PRIVMSG") {
         handlePrivmsg(cmdList, client, this);
-    } else {
+    } else if (cmd == "MODE") {
+        handleMode(cmdList, client, this);
+    }
+    else {
         sendUnknownCommandError(client, cmd);
     }
 }
@@ -509,3 +524,5 @@ void Server::sigHandler(int sig) {
     Logger::warning("Signal received! Stopping server...");
     signal = true;
 }
+
+

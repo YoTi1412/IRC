@@ -12,3 +12,4 @@ void handleUser(std::list<std::string> cmdList, Client* client, Server* server);
 void handleJoin(std::list<std::string> cmdList, Client* client, Server* server);
 void handlePrivmsg(std::list<std::string> cmdList, Client* client, Server* server);
 void handlePart(std::list<std::string> cmdList, Client* client, Server* server);
+void handleMode(std::list<std::string> cmdList, Client* client, Server* server);

@@ -105,6 +105,18 @@ const std::map<int, Client*>& Server::getClients() const {
     return this->clients;
 }
 
+
+Client* Server::getClientByNickname(const std::string& nickname) const
+{
+    for (std::map<int, Client*>::const_iterator it = clients.begin(); it != clients.end(); ++it)
+    {
+        if (it->second->getNickname() == nickname)
+            return it->second;
+    }
+    return NULL;
+}
+
+
 // ------------------- Socket Initialization -------------------
 
 void Server::serverInit() {
@@ -475,7 +487,10 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
         handlePrivmsg(cmdList, client, this);
     } else if (cmd == "PART") {
         handlePart(cmdList, client, this);
-    } else {
+    } else if (cmd == "MODE") {
+        handleMode(cmdList, client, this);
+    }
+    else {
         sendUnknownCommandError(client, cmd);
     }
 }

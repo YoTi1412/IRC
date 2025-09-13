@@ -4,7 +4,19 @@
 #include "Replies.hpp"
 #include "Channel.hpp"
 
-// RFC 2812: Section 3.2.1 - Validates channel name according to IRC protocol rules
+/**
+ * @brief Validates channel name according to RFC 2812 (Section 3.2.1).
+ *
+ * Parameters:
+ * - name: The channel name to validate.
+ *
+ * The function:
+ * - Checks if the name is non-empty, starts with '#', and is within 50 characters.
+ * - Ensures the name does not contain spaces, commas, or ASCII 7 (bell).
+ * - Verifies the name is not just '#' (must have at least one character after).
+ *
+ * @return true if the channel name is valid, false otherwise.
+ */
 static bool isValidChannelName(const std::string& name) {
     if (name.empty() || name.length() > 50 || name[0] != '#') { // Max 50 chars per RFC 2812
         return false;
@@ -17,7 +29,19 @@ static bool isValidChannelName(const std::string& name) {
     return name.length() > 1; // Ensure non-empty name after '#'
 }
 
-// RFC 2812: Section 3.2.1 - Checks if JOIN command has valid parameters and client registration
+/**
+ * @brief Checks if JOIN command has sufficient parameters as per RFC 2812 (Section 3.2.1).
+ *
+ * Parameters:
+ * - cmdList: List of command arguments (expected to include channel names and optional keys).
+ * - client: Pointer to the client issuing the command.
+ *
+ * The function:
+ * - Validates that at least one channel name is provided (minimum 2 elements in cmdList: "JOIN" and channels).
+ * - Sends ERR_NEEDMOREPARAMS (461) reply if parameters are insufficient.
+ *
+ * @return true if parameters are valid, false otherwise.
+ */
 static bool validateJoinParameters(std::list<std::string>& cmdList, Client* client) {
     if (cmdList.size() < 2) {
         std::string nickname;
@@ -33,7 +57,18 @@ static bool validateJoinParameters(std::list<std::string>& cmdList, Client* clie
     return true;
 }
 
-// RFC 2812: Section 3.2.1 - Verifies if client is registered before joining
+/**
+ * @brief Verifies client registration status for JOIN command as per RFC 2812 (Section 3.2.1).
+ *
+ * Parameters:
+ * - client: Pointer to the client issuing the command.
+ *
+ * The function:
+ * - Checks if the client has completed registration (e.g., NICK and USER commands processed).
+ * - Sends ERR_NOTREGISTERED (451) reply if the client is not registered.
+ *
+ * @return true if the client is registered, false otherwise.
+ */
 static bool validateClientRegistration(Client* client) {
     if (!client->isRegistered()) {
         std::string nickname;
@@ -49,7 +84,21 @@ static bool validateClientRegistration(Client* client) {
     return true;
 }
 
-// RFC 2812: Section 3.2.1 - Creates or retrieves a channel, handling membership
+/**
+ * @brief Creates or retrieves a channel as per RFC 2812 (Section 3.2.1).
+ *
+ * Parameters:
+ * - channelName: Name of the channel to join or create.
+ * - client: Pointer to the client issuing the command.
+ * - server: Pointer to the server instance managing channels.
+ *
+ * The function:
+ * - Checks if the channel exists in the server's channel map.
+ * - Creates a new channel with the client as the operator if it does not exist.
+ * - Retrieves the existing channel if it already exists.
+ *
+ * @return Pointer to the Channel object (newly created or existing).
+ */
 static Channel* getOrCreateChannel(const std::string& channelName, Client* client, Server* server) {
     std::map<std::string, Channel*>& channels = server->getChannels();
     Channel* channel = NULL;
@@ -63,7 +112,19 @@ static Channel* getOrCreateChannel(const std::string& channelName, Client* clien
     return channel;
 }
 
-// RFC 2812: Section 3.2.1 - Checks if client is already a member of the channel
+/**
+ * @brief Checks if a client is already a member of a channel as per RFC 2812 (Section 3.2.1).
+ *
+ * Parameters:
+ * - channel: Pointer to the channel being joined.
+ * - client: Pointer to the client attempting to join.
+ *
+ * The function:
+ * - Verifies if the client is already a member of the specified channel.
+ * - Sends ERR_USERONCHANNEL (443) reply if the client is already a member.
+ *
+ * @return true if the client is already a member, false otherwise.
+ */
 static bool checkExistingMembership(Channel* channel, Client* client) {
     if (channel->isMember(client)) {
         client->sendReply(std::string(IRC_SERVER) + " " + ERR_USERONCHANNEL + " " +
@@ -74,7 +135,19 @@ static bool checkExistingMembership(Channel* channel, Client* client) {
     return false;
 }
 
-// RFC 2812: Section 3.2.1 - Broadcasts JOIN message and sends topic/replies to client
+/**
+ * @brief Broadcasts JOIN message and sends topic/replies as per RFC 2812 (Section 3.2.1).
+ *
+ * Parameters:
+ * - channelName: Name of the channel being joined.
+ * - channel: Pointer to the channel object.
+ * - client: Pointer to the client joining the channel.
+ *
+ * The function:
+ * - Broadcasts the JOIN message to all channel members.
+ * - Sends RPL_TOPIC (332) if the channel has a topic.
+ * - Sends RPL_NAMREPLY (353) and RPL_ENDOFNAMES (366) to the joining client.
+ */
 static void sendJoinMessages(const std::string& channelName, Channel* channel, Client* client) {
     std::string userIdent = client->getNickname() + "!" + client->getUsername() + "@" + client->getHostname();
     std::string joinMsg = ":" + userIdent + " JOIN " + channelName;
@@ -91,7 +164,22 @@ static void sendJoinMessages(const std::string& channelName, Channel* channel, C
                       client->getNickname() + " " + channelName + " :End of NAMES list");
 }
 
-// RFC 2812: Section 3.2.1 - Processes a single channel join operation
+/**
+ * @brief Processes a single channel join operation as per RFC 2812 (Section 3.2.1).
+ *
+ * Parameters:
+ * - channelName: Name of the channel to join.
+ * - key: Channel key (currently unused, reserved for future implementation).
+ * - client: Pointer to the client attempting to join.
+ * - server: Pointer to the server instance managing channels.
+ *
+ * The function:
+ * - Validates the channel name.
+ * - Retrieves or creates the channel.
+ * - Checks for existing membership.
+ * - Adds the client to the channel and sends appropriate messages.
+ * - Logs the join event.
+ */
 static void processSingleJoin(const std::string& channelName, const std::string& key, Client* client, Server* server) {
     (void)key; // Suppress unused parameter warning, to be used later for key handling
     if (!isValidChannelName(channelName)) {
@@ -110,7 +198,19 @@ static void processSingleJoin(const std::string& channelName, const std::string&
     Logger::info(client->getNickname() + " joined " + channelName);
 }
 
-// RFC 2812: Section 3.2.1 - Handles JOIN command by processing channel and key lists
+/**
+ * @brief Handles the JOIN command as per RFC 2812 (Section 3.2.1).
+ *
+ * Parameters:
+ * - cmdList: List of command arguments (channel names and optional keys).
+ * - client: Pointer to the client issuing the command.
+ * - server: Pointer to the server instance managing channels.
+ *
+ * The function:
+ * - Validates parameters and client registration.
+ * - Splits channel names and keys (if provided) using comma as delimiter.
+ * - Processes each channel join individually.
+ */
 void handleJoin(std::list<std::string> cmdList, Client* client, Server* server) {
     if (!validateJoinParameters(cmdList, client) || !validateClientRegistration(client)) {
         return;

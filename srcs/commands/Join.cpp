@@ -99,18 +99,18 @@ static bool validateClientRegistration(Client* client) {
  *
  * @return Pointer to the Channel object (newly created or existing).
  */
-static Channel* getOrCreateChannel(const std::string& channelName, Client* client, Server* server) {
-    std::map<std::string, Channel*>& channels = server->getChannels();
-    Channel* channel = NULL;
-    std::map<std::string, Channel*>::iterator it = channels.find(channelName);
-    if (it == channels.end()) {
-        channel = new Channel(channelName, client);
-        channels[channelName] = channel;
-    } else {
-        channel = it->second;
-    }
-    return channel;
-}
+ static Channel* getOrCreateChannel(const std::string& channelName, Client* client, Server* server) {
+     std::map<std::string, Channel*>& channels = server->getChannels();
+     Channel* channel = NULL;
+     std::map<std::string, Channel*>::iterator it = channels.find(channelName);
+     if (it == channels.end()) {
+         channel = new Channel(channelName, client);
+         channels[channelName] = channel;
+     } else {
+         channel = it->second;
+     }
+     return channel;
+ }
 
 /**
  * @brief Checks if a client is already a member of a channel as per RFC 2812 (Section 3.2.1).
@@ -128,8 +128,7 @@ static Channel* getOrCreateChannel(const std::string& channelName, Client* clien
 static bool checkExistingMembership(Channel* channel, Client* client) {
     if (channel->isMember(client)) {
         client->sendReply(std::string(IRC_SERVER) + " " + ERR_USERONCHANNEL + " " +
-                          client->getNickname() + " " + client->getNickname() + " " +
-                          channel->getName() + " :is already on channel");
+                          client->getNickname() + " " + channel->getName() + " :is already on channel");
         return true;
     }
     return false;
@@ -180,24 +179,23 @@ static void sendJoinMessages(const std::string& channelName, Channel* channel, C
  * - Adds the client to the channel and sends appropriate messages.
  * - Logs the join event.
  */
-static void processSingleJoin(const std::string& channelName, const std::string& key, Client* client, Server* server) {
-    (void)key; // Suppress unused parameter warning, to be used later for key handling
-    if (!isValidChannelName(channelName)) {
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_BADCHANMASK + " " +
-                          client->getNickname() + " " + channelName + " :Invalid channel name");
-        return;
-    }
+ static void processSingleJoin(const std::string& channelName, const std::string& key, Client* client, Server* server) {
+     (void)key;
+     if (!isValidChannelName(channelName)) {
+         client->sendReply(std::string(IRC_SERVER) + " " + ERR_BADCHANMASK + " " +
+                           client->getNickname() + " " + channelName + " :Invalid channel name");
+         return;
+     }
 
-    Channel* channel = getOrCreateChannel(channelName, client, server);
-    if (checkExistingMembership(channel, client)) {
-        return;
-    }
+     Channel* channel = getOrCreateChannel(channelName, client, server);
+     if (checkExistingMembership(channel, client)) {
+         return;
+     }
 
-    channel->addMember(client);
-    sendJoinMessages(channelName, channel, client);
-    Logger::info(client->getNickname() + " joined " + channelName);
-}
-
+     channel->addMember(client);
+     sendJoinMessages(channelName, channel, client);
+     Logger::info(client->getNickname() + " joined " + channelName);
+ }
 /**
  * @brief Handles the JOIN command as per RFC 2812 (Section 3.2.1).
  *

@@ -18,6 +18,7 @@ SRCS        = main.cpp \
               commands/Kick.cpp \
               commands/Mode.cpp \
               commands/Nick.cpp \
+              commands/Part.cpp \
               commands/Pass.cpp \
               commands/Privmsg.cpp \
               commands/Topic.cpp \

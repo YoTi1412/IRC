@@ -473,6 +473,8 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
         handleJoin(cmdList, client, this);
     } else if (cmd == "PRIVMSG") {
         handlePrivmsg(cmdList, client, this);
+    } else if (cmd == "PART") {
+        handlePart(cmdList, client, this);
     } else {
         sendUnknownCommandError(client, cmd);
     }

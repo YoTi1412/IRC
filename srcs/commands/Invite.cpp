@@ -9,7 +9,7 @@ static bool validateCommand(std::list<std::string>& cmdList, Client* client)
 {
     if (cmdList.size() < 3) {
         std::ostringstream oss;
-        oss << IRC_SERVER << " " << ERR_NEEDMOREPARAMS << " " << client->getNickname() << " JOIN :Not enough parameters";
+        oss << IRC_SERVER << " " << ERR_NEEDMOREPARAMS << " " << client->getNickname() << " INVITE :Not enough parameters";
         client->sendReply(oss.str());
         return false;
     }
@@ -105,9 +105,24 @@ static void sendInvite(Channel* channel, Client* sender, Client* target)
     Logger::info(sender->getNickname() + " invited " + target->getNickname() + " to " + channel->getName());
 }
 
+static bool validateClientRegistration(Client* client) {
+    if (!client->isRegistered()) {
+        std::string nickname;
+        if (client->getNickname().empty()) {
+            nickname = "*";
+        } else {
+            nickname = client->getNickname();
+        }
+        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOTREGISTERED + " " +
+                          nickname + " :You have not registered");
+        return false;
+    }
+    return true;
+}
+
 void handleInvite(std::list<std::string> cmdList, Client* client, Server* server)
 {
-    if (!validateInviteCommand(cmdList, client))
+    if (!validateInviteCommand(cmdList, client) || validateClientRegistration(client))
         return;
 
     std::list<std::string>::iterator it = cmdList.begin();

@@ -143,8 +143,10 @@ void Channel::addOperator(int fd) {
 }
 
 void Channel::removeOperator(int fd) {
-    operators.erase(fd);
-    Logger::info("Client fd " + Utils::intToString(fd) + " demoted from operator in " + name);
+    if (operators.find(fd) != operators.end()) {
+        operators.erase(fd);
+        Logger::info("Client fd " + Utils::intToString(fd) + " demoted from operator in " + name);
+    }
 }
 
 void Channel::broadcast(const std::string& message, Client* sender) {

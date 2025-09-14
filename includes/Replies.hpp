@@ -10,7 +10,9 @@
 #define RPL_YOURHOST        "002"
 #define RPL_CREATED         "003"
 #define RPL_MYINFO          "004"
+#define RPL_NOTOPIC         "331"
 #define RPL_TOPIC           "332"  // Added: Channel topic reply
+#define RPL_TOPICWHOTIME    "303"
 #define RPL_NAMREPLY        "353"  // Added: Names list reply
 #define RPL_ENDOFNAMES      "366"  // Added: End of names list
 

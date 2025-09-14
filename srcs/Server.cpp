@@ -491,6 +491,8 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
         handleMode(cmdList, client, this);
     } else if (cmd == "INVITE") {
         handleInvite(cmdList, client, this);
+    } else if (cmd == "TOPIC") {
+        handleTopic(cmdList, client, this);
     } else {
         sendUnknownCommandError(client, cmd);
     }

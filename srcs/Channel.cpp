@@ -9,7 +9,8 @@ Channel::Channel(const std::string& channelName, Client* creator)
       inviteOnly(false),
       topicRestricted(false),
       limited(false),
-      limit(0)
+      limit(0),
+      secret(false)
 {
     createdTime = Utils::getFormattedTime();
     if (creator) {
@@ -24,6 +25,7 @@ Channel::~Channel() {
 const std::string& Channel::getName() const { return name; }
 const std::string& Channel::getTopic() const { return topic; }
 const std::string& Channel::getKey() const { return key; }
+bool Channel::getSecret() const { return secret; };
 const std::string& Channel::getTopicSetter() const { return topicSetter; }
 time_t Channel::getTopicTime() const { return topicTime; }
 size_t Channel::getLimit() const { return limit; }
@@ -49,6 +51,13 @@ bool Channel::isInvited(int fd) const {
 
 void Channel::setTopic(const std::string& newTopic, Client* setter) {
     if (setter && (!topicRestricted || isOperator(setter))) {
+        for (std::string::const_iterator it = newTopic.begin(); it != newTopic.end(); ++it) {
+            unsigned char c = static_cast<unsigned char>(*it);
+            if (c < 32 || c > 126) {
+                Logger::warning("Topic change failed for " + name + ": Invalid characters");
+                return;
+            }
+        }
         topic = newTopic;
         topicSetter = setter->getNickname();
         topicTime = time(NULL);
@@ -61,6 +70,11 @@ void Channel::setTopic(const std::string& newTopic, Client* setter) {
 void Channel::setKey(const std::string& newKey) {
     key = newKey;
     Logger::info("Key " + std::string(key.empty() ? "removed from " : "set for ") + name);
+}
+
+void Channel::setSecret(bool flag) {
+    secret = flag;
+    Logger::info("Secret status " + std::string(flag ? "enabled" : "disabled") + " for " + name);
 }
 
 void Channel::setLimit(size_t newLimit) {
@@ -103,7 +117,7 @@ void Channel::addMember(Client* client) {
     if (client && !isMember(client)) {
         int fd = client->getFd();
         members[fd] = client;
-        removeInvite(fd);  // Clear invite upon join
+        removeInvite(fd);
         if (members.size() == 1) {
             addOperator(fd);
         }

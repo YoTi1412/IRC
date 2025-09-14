@@ -133,8 +133,9 @@ void Server::serverInit() {
 void Server::createSocket() {
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (sock_fd < 0) {
-        Logger::error("Failed to create socket: " + std::string(strerror(errno)));
-        throw std::runtime_error("Failed to create socket: " + std::string(strerror(errno)));
+        std::runtime_error e("Failed to create socket: " + std::string(strerror(errno)));
+        Logger::error(e);
+        throw e;
     }
     Logger::info("Socket created successfully.");
 }
@@ -144,7 +145,7 @@ void Server::configureServerAddress() {
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     serverAddress.sin_port = htons(port);
-    Logger::debug("Server address configured with port " + Utils::intToString(port));
+    Logger::debug("Server address configured for port " + Utils::intToString(port));
 }
 
 void Server::setSocketTimeout() {
@@ -152,8 +153,9 @@ void Server::setSocketTimeout() {
     tv.tv_sec = 5;
     tv.tv_usec = 0;
     if (setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) < 0) {
-        Logger::error("Failed to set socket timeout: " + std::string(strerror(errno)));
-        throw std::runtime_error("Failed to set socket timeout: " + std::string(strerror(errno)));
+        std::runtime_error e("Failed to set socket timeout: " + std::string(strerror(errno)));
+        Logger::error(e);
+        throw e;
     }
     Logger::debug("Socket timeout set to 5 seconds.");
 }
@@ -161,24 +163,27 @@ void Server::setSocketTimeout() {
 void Server::setReuseAddr() {
     int optval = 1;
     if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
-        Logger::error("Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
-        throw std::runtime_error("Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
+        std::runtime_error e("Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
+        Logger::error(e);
+        throw e;
     }
     Logger::debug("SO_REUSEADDR option enabled on socket.");
 }
 
 void Server::bindSocket() {
     if (bind(sock_fd, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
-        Logger::error("Failed to bind socket: " + std::string(strerror(errno)));
-        throw std::runtime_error("Failed to bind socket: " + std::string(strerror(errno)));
+        std::runtime_error e("Failed to bind socket: " + std::string(strerror(errno)));
+        Logger::error(e);
+        throw e;
     }
     Logger::info("Socket bound successfully.");
 }
 
 void Server::listenOnSocket() {
     if (listen(sock_fd, SOMAXCONN) < 0) {
-        Logger::error("Failed to listen on socket: " + std::string(strerror(errno)));
-        throw std::runtime_error("Failed to listen on socket: " + std::string(strerror(errno)));
+        std::runtime_error e("Failed to listen on socket: " + std::string(strerror(errno)));
+        Logger::error(e);
+        throw e;
     }
     Logger::info("Server listening on socket with maximum connections.");
 }
@@ -210,8 +215,9 @@ void Server::serverRun() {
 void Server::pollForEvents(std::vector<pollfd>& pollCopy) {
     int ret = poll(&pollCopy[0], pollCopy.size(), -1);
     if (ret < 0 && errno != EINTR) {
-        Logger::error("Poll failed: " + std::string(strerror(errno)));
-        throw std::runtime_error("Poll failed: " + std::string(strerror(errno)));
+        std::runtime_error e("Poll failed: " + std::string(strerror(errno)));
+        Logger::error(e);
+        throw e;
     }
     if (ret >= 0) {
         Logger::debug("Poll event checked for " + Utils::intToString(pollCopy.size()) + " file descriptors.");
@@ -436,7 +442,7 @@ std::list<std::string> Server::parseMessage(const std::string& message) {
     }
 
     tokenizePrefix(prefix, cmdList);
-    if (!trailing.empty()) {
+    if (colonPos != std::string::npos) {
         cmdList.push_back(trailing);
     }
 
@@ -491,6 +497,8 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
         handleMode(cmdList, client, this);
     } else if (cmd == "INVITE") {
         handleInvite(cmdList, client, this);
+    } else if (cmd == "NAMES") {
+        handleNames(cmdList, client, this);
     } else if (cmd == "TOPIC") {
         handleTopic(cmdList, client, this);
     } else if (cmd == "KICK") {
@@ -524,13 +532,12 @@ bool Server::isUpperCase(const std::string& str) {
     return true;
 }
 
-void Server::removeChannel(const std::string& channelName)
-{
+void Server::removeChannel(const std::string& channelName) {
     std::map<std::string, Channel*>::iterator it = channels.find(channelName);
-    if (it != channels.end())
-    {
+    if (it != channels.end()) {
+        delete it->second;
         channels.erase(it);
-        std::cout << channelName << " erased successfully" << std::endl;
+        Logger::info("Channel " + channelName + " deleted and erased.");
     }
 }
 

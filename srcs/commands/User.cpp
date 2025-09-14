@@ -66,6 +66,7 @@ static void maybeRegister(Client* client, Server* server) {
         client->sendReply(IRC_SERVER " " RPL_WELCOME " " + nick + " :Welcome to the Internet Relay Network " + userIdent);
         client->sendReply(IRC_SERVER " " RPL_YOURHOST " " + nick + " :Your host is ircserv, running version 1.0");
         client->sendReply(IRC_SERVER " " RPL_CREATED " " + nick + " :This server was created " + server->getCreatedTime());
+        client->sendReply(IRC_SERVER " " RPL_MYINFO " " + nick + " ircserv 1.0 " "" " itkol");
     }
 }
 

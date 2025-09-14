@@ -118,11 +118,11 @@ void Client::sendReply(const std::string& reply) {
 void Client::sendWelcomeHowTo(int fd)
 {
     const char *lines[] = {
-        ":ircserv 001 * :Welcome!  Please register in this exact order:\r\n",
-        ":ircserv 002 * :  PASS <server-password>\r\n",
-        ":ircserv 003 * :  NICK <nickname>\r\n",
-        ":ircserv 004 * :  USER <user> 0 * :<real name>\r\n",
-        ":ircserv 005 * :Then /JOIN channels and chat.  Commands must be UPPERCASE.\r\n",
+        ":ircserv NOTICE * :Welcome! Please register in this exact order:\r\n",
+        ":ircserv NOTICE * :  PASS <server-password>\r\n",
+        ":ircserv NOTICE * :  NICK <nickname>\r\n",
+        ":ircserv NOTICE * :  USER <user> 0 * :<real name>\r\n",
+        ":ircserv NOTICE * :Then #JOIN channels and chat. Commands must be UPPERCASE.\r\n",
         NULL
     };
     for (const char **p = lines; *p; ++p)

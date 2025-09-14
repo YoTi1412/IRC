@@ -1,6 +1,13 @@
 #include "Utils.hpp"
 #include "Server.hpp"
 
+std::string Utils::formatTime(time_t t) {
+    struct tm* timeinfo = localtime(&t);
+    char buf[32];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", timeinfo);
+    return std::string(buf);
+}
+
 bool Utils::isValidPort(const char* portStr) {
     for (size_t i = 0; portStr[i]; i++)
         if (!isdigit(portStr[i]))
@@ -58,10 +65,24 @@ std::list<std::string> Utils::splitCommand(const std::string& buffer) {
     if (pos != std::string::npos) {
         std::string cmd = buffer.substr(0, pos);
         if (!cmd.empty()) {
-            std::istringstream iss(cmd);
-            std::string token;
-            while (iss >> token) {
-                cmdList.push_back(token);
+            size_t colonPos = cmd.find(" :");
+            if (colonPos != std::string::npos) {
+                // Handle trailing parameter
+                std::string beforeColon = cmd.substr(0, colonPos);
+                std::istringstream iss(beforeColon);
+                std::string token;
+                while (iss >> token) {
+                    if (!token.empty()) cmdList.push_back(token);
+                }
+                std::string trailing = cmd.substr(colonPos + 2); // Skip " :"
+                if (!trailing.empty()) cmdList.push_back(trailing);
+            } else {
+                // No trailing parameter, split normally
+                std::istringstream iss(cmd);
+                std::string token;
+                while (iss >> token) {
+                    if (!token.empty()) cmdList.push_back(token);
+                }
             }
         }
     }
@@ -73,7 +94,6 @@ std::string Utils::toLower(const std::string& str) {
     std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
     return lowerStr;
 }
-
 
 std::list<std::string> Utils::split(const std::string& str, char delim) {
     std::list<std::string> tokens;

@@ -26,6 +26,7 @@ private:
     bool topicRestricted;
     bool limited;
     size_t limit;
+    bool secret; // Add this member for secret channel status
 
     std::string createdTime;
 
@@ -45,6 +46,7 @@ public:
     bool getLimited() const;
     bool getKeyProtected() const;
     size_t getMemberCount() const;
+    bool getSecret() const; // Add this getter
 
     // membership
     bool isMember(Client* client) const;
@@ -58,6 +60,7 @@ public:
     void setInviteOnly(bool flag);
     void setTopicRestricted(bool flag);
     void setLimited(bool flag);
+    void setSecret(bool flag); // Add this setter (optional)
 
     // invites
     void addInvite(int fd);

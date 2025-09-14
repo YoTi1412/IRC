@@ -22,6 +22,7 @@ SRCS        = main.cpp \
               commands/Pass.cpp \
               commands/Privmsg.cpp \
               commands/Topic.cpp \
+              commands/Name.cpp \
               commands/User.cpp
 
 OBJ_PATH    = objs/

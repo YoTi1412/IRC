@@ -69,6 +69,11 @@ void Channel::setLimit(size_t newLimit) {
     Logger::info("Limit " + std::string(limited ? "set to " + Utils::intToString(newLimit) : "removed") + " for " + name);
 }
 
+void Channel::setLimited(bool flag)
+{
+    limited = flag;
+}
+
 void Channel::setInviteOnly(bool flag) {
     inviteOnly = flag;
     Logger::info("Invite-only " + std::string(flag ? "enabled" : "disabled") + " for " + name);

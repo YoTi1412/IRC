@@ -57,6 +57,7 @@ public:
     void setLimit(size_t newLimit);
     void setInviteOnly(bool flag);
     void setTopicRestricted(bool flag);
+    void setLimited(bool flag);
 
     // invites
     void addInvite(int fd);

@@ -88,9 +88,7 @@ void handleTopic(std::list<std::string> cmdList, Client* client, Server* server)
     if (!channel)
         return;
     if (!checkExistingMembership(channel, client))
-    {
         return ;
-    }
     ++it;
     if (it == cmdList.end())
     {

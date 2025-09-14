@@ -199,7 +199,7 @@ static bool validateClientRegistration(Client* client) {
  */
 void handleInvite(std::list<std::string> cmdList, Client* client, Server* server)
 {
-     if (!validateInviteCommand(cmdList, client) || !validateClientRegistration(client))
+    if (!validateInviteCommand(cmdList, client) || !validateClientRegistration(client))
         return;
 
     std::list<std::string>::iterator it = cmdList.begin();

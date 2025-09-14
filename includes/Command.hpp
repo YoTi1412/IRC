@@ -15,3 +15,4 @@ void handlePart(std::list<std::string> cmdList, Client* client, Server* server);
 void handleMode(std::list<std::string> cmdList, Client* client, Server* server);
 void handleInvite(std::list<std::string> cmdList, Client* client, Server* server);
 void handleTopic(std::list<std::string> cmdList, Client* client, Server* server);
+void handleKick(std::list<std::string> cmdList, Client* client, Server* server);

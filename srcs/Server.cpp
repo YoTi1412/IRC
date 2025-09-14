@@ -493,6 +493,8 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
         handleInvite(cmdList, client, this);
     } else if (cmd == "TOPIC") {
         handleTopic(cmdList, client, this);
+    } else if (cmd == "KICK") {
+        handleKick(cmdList, client, this);
     } else {
         sendUnknownCommandError(client, cmd);
     }
@@ -521,6 +523,17 @@ bool Server::isUpperCase(const std::string& str) {
     }
     return true;
 }
+
+void Server::removeChannel(const std::string& channelName)
+{
+    std::map<std::string, Channel*>::iterator it = channels.find(channelName);
+    if (it != channels.end())
+    {
+        channels.erase(it);
+        std::cout << channelName << " erased successfully" << std::endl;
+    }
+}
+
 
 // ------------------- Signal Handling -------------------
 

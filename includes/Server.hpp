@@ -73,6 +73,7 @@ private:
     void sendUnknownCommandError(Client* client, const std::string& cmd);
     bool isUpperCase(const std::string& str);
 
+
     void cleanupAllChannels();
 
     Server(const Server &server);
@@ -96,4 +97,5 @@ public:
     std::map<std::string, Channel*>& getChannels();
     const std::map<std::string, Channel*>& getChannels() const;
     Client* getClientByNickname(const std::string& nickname) const;
+    void removeChannel(const std::string& channelName);
 };

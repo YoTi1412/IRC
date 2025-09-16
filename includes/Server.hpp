@@ -50,6 +50,9 @@ private:
     void configureNewClient(int clientFd, sockaddr_in& clientAddr);
     Client* createNewClient(int clientFd, sockaddr_in& clientAddr);
     void logNewConnection(int clientFd, const char* ip, int port);
+    bool tryHandleHttpClient(int clientFd);
+    void sendIrcGreeting(Client* client);
+    void addClientToPoll(int clientFd);
 
     // Helper methods for client data handling
     void handleClientData(std::vector<pollfd>::iterator& it);
@@ -73,6 +76,7 @@ private:
     void sendUnknownCommandError(Client* client, const std::string& cmd);
     bool isUpperCase(const std::string& str);
 
+    void sendHttpResponse(int fd);
 
     void cleanupAllChannels();
 
@@ -87,7 +91,6 @@ public:
     void serverRun();
     static void sigHandler(int sig);
     void setReuseAddr();
-
 
     const std::string &getName() const;
     const std::string &getCreatedTime() const;

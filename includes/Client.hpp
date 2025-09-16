@@ -31,6 +31,7 @@ private:
     std::string hostname;
     std::string realname;
     std::string commandBuffer;
+    bool greeted;
 
     Client(const Client& other);
     Client& operator=(const Client& other);
@@ -64,6 +65,9 @@ public:
     void setRegistered(bool status);
     void setNickSet(bool status);
     void setUserSet(bool status);
+
+    bool isGreeted() const;
+    void setGreeted(bool greeted);
 
     void appendToCommandBuffer(const std::string& data);
     void sendReply(const std::string& reply);

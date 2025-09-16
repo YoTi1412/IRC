@@ -4,7 +4,7 @@
 
 // Constructor
 Client::Client()
-    : fd(-1), registered(false), authenticated(false), nickSet(false), userSet(false), realname("")
+    : fd(-1), registered(false), authenticated(false), nickSet(false), userSet(false), realname(""), greeted(false)
 {
     Logger::debug(LOG_CLIENT_CREATED);
 }
@@ -63,6 +63,9 @@ void Client::setRegistered(bool status) {
 }
 void Client::setNickSet(bool status) { nickSet = status; }
 void Client::setUserSet(bool status) { userSet = status; }
+
+bool Client::isGreeted() const { return greeted; }
+void Client::setGreeted(bool greeted) { this->greeted = greeted; }
 
 // Command Handling
 void Client::appendToCommandBuffer(const std::string& data) {

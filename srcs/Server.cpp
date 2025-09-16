@@ -105,17 +105,14 @@ const std::map<int, Client*>& Server::getClients() const {
     return this->clients;
 }
 
-
-Client* Server::getClientByNickname(const std::string& nickname) const
-{
-    for (std::map<int, Client*>::const_iterator it = clients.begin(); it != clients.end(); ++it)
-    {
-        if (it->second->getNickname() == nickname)
+Client* Server::getClientByNickname(const std::string& nickname) const {
+    for (std::map<int, Client*>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
+        if (it->second->getNickname() == nickname) {
             return it->second;
+        }
     }
     return NULL;
 }
-
 
 // ------------------- Socket Initialization -------------------
 
@@ -270,14 +267,61 @@ void Server::handleAcceptResult(int clientFd, sockaddr_in& clientAddr) {
 
 void Server::configureNewClient(int clientFd, sockaddr_in& clientAddr) {
     Utils::setnonblocking(clientFd);
+    Client* client = createNewClient(clientFd, clientAddr);
+    clients[clientFd] = client;
+
+    if (tryHandleHttpClient(clientFd)) {
+        return;
+    }
+
+    sendIrcGreeting(client);
+    addClientToPoll(clientFd);
+}
+
+static bool looksLikeHTTP(const char *buf) {
+    return strncmp(buf, "GET ", 4) == 0 ||
+           strncmp(buf, "POST ", 5) == 0 ||
+           strncmp(buf, "HEAD ", 5) == 0;
+}
+
+
+bool Server::tryHandleHttpClient(int clientFd) {
+    char buffer[BUFFER_SIZE] = {0};
+    int bytesRead = recv(clientFd, buffer, sizeof(buffer) - 1, MSG_DONTWAIT);
+    if (bytesRead <= 0) {
+        if (bytesRead == 0 || (bytesRead < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))) {
+            return false; // No data, assume IRC
+        }
+        Logger::warning("Immediate read error on fd: " + Utils::intToString(clientFd) + ", " + strerror(errno));
+        handleClientDisconnect(clientFd);
+        return true;
+    }
+
+    buffer[bytesRead] = '\0';
+    if (looksLikeHTTP(buffer)) {
+        sendHttpResponse(clientFd);
+        handleClientDisconnect(clientFd);
+        return true;
+    }
+
+    // Not HTTP, process as IRC
+    Client* client = clients[clientFd];
+    client->appendToCommandBuffer(buffer);
+    processClientBuffer(clientFd);
+    return false;
+}
+
+void Server::sendIrcGreeting(Client* client) {
+    client->sendWelcomeHowTo(client->getFd());
+    client->setGreeted(true);
+}
+
+void Server::addClientToPoll(int clientFd) {
     pollfd pfd;
     pfd.fd = clientFd;
     pfd.events = POLLIN;
     pfd.revents = 0;
     pollFds.push_back(pfd);
-    Client* client = createNewClient(clientFd, clientAddr);
-    clients[clientFd] = client;
-    Client::sendWelcomeHowTo(pfd.fd);
 }
 
 Client* Server::createNewClient(int clientFd, sockaddr_in& clientAddr) {
@@ -295,7 +339,6 @@ void Server::logNewConnection(int clientFd, const char* ip, int port) {
                  ", IP: " + ip +
                  ", Port: " + Utils::intToString(port));
 }
-
 
 // ------------------- Client Data Handling -------------------
 
@@ -319,11 +362,24 @@ void Server::handleReadError(int fd) {
     if (errno != EAGAIN && errno != EWOULDBLOCK) {
         Logger::warning("Read error on fd: " + Utils::intToString(fd) + ", " + strerror(errno));
     }
+    handleClientDisconnect(fd);
 }
 
 void Server::handleClientDisconnect(int fd) {
-    Client* client = clients[fd];
-    if (client) {
+    if (processedFds.find(fd) != processedFds.end()) {
+        return; // Already processed
+    }
+    processedFds.insert(fd);
+
+    std::vector<pollfd>::iterator pollIt = findPollIterator(fd);
+    if (pollIt != pollFds.end()) {
+        pollFds.erase(pollIt);
+    }
+
+    std::map<int, Client*>::iterator clientIt = clients.find(fd);
+    if (clientIt != clients.end()) {
+        Client* client = clientIt->second;
+        // Remove from channels
         std::map<std::string, Channel*>::iterator chanIt = channels.begin();
         while (chanIt != channels.end()) {
             Channel* channel = chanIt->second;
@@ -335,51 +391,46 @@ void Server::handleClientDisconnect(int fd) {
                 ++chanIt;
             }
         }
-        close(fd);
         delete client;
-        clients.erase(fd);
-        std::vector<pollfd>::iterator pollIt = pollFds.begin();
-        while (pollIt != pollFds.end()) {
-            if (pollIt->fd == fd) {
-                pollFds.erase(pollIt);
-                break;
-            } else {
-                ++pollIt;
-            }
-        }
-        Logger::info("Client disconnected, fd: " + Utils::intToString(fd));
+        clients.erase(clientIt);
     }
+
+    if (fd > 0) {
+        close(fd);
+    }
+    Logger::info("Client disconnected, fd: " + Utils::intToString(fd));
 }
 
 std::vector<pollfd>::iterator Server::findPollIterator(int fd) {
-    std::vector<pollfd>::iterator it = pollFds.begin();
-    while (it != pollFds.end()) {
+    for (std::vector<pollfd>::iterator it = pollFds.begin(); it != pollFds.end(); ++it) {
         if (it->fd == fd) {
             return it;
         }
-        ++it;
     }
     return pollFds.end();
 }
 
-void Server::handleReadSuccess(int fd, char* buffer, int bytesRead)
-{
+void Server::sendHttpResponse(int fd) {
+    const char *http =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: 29\r\n"
+        "Connection: close\r\n"
+        "\r\n"
+        "This is an IRC server mate ;)";
+    send(fd, http, strlen(http), MSG_NOSIGNAL);
+}
+
+void Server::handleReadSuccess(int fd, char* buffer, int bytesRead) {
     buffer[bytesRead] = '\0';
-    Logger::debug("Read " + Utils::intToString(bytesRead) + " bytes from fd "
-        + Utils::intToString(fd) + ": " + buffer);
-    if (strncmp(buffer, "GET ", 4) == 0 || strncmp(buffer, "POST ", 5) == 0)
-    {
-        const char *http =
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/plain\r\n"
-            "Content-Length: 29\r\n"
-            "Connection: close\r\n"
-            "\r\n"
-            "This is an IRC server mate ;)";
-        send(fd, http, strlen(http), MSG_NOSIGNAL);
+    Logger::debug("Read " + Utils::intToString(bytesRead) + " bytes from fd " + Utils::intToString(fd) + ": " + buffer);
+
+    if (looksLikeHTTP(buffer)) {
+        sendHttpResponse(fd);
         handleClientDisconnect(fd);
         return;
     }
+
     appendToClientBuffer(fd, buffer);
     processClientBuffer(fd);
 }
@@ -391,22 +442,20 @@ void Server::appendToClientBuffer(int fd, const char* data) {
 }
 
 void Server::processClientBuffer(int fd) {
-    Client* client = clients[fd];
-    std::string& buffer = client->getCommandBuffer();
-    while (hasNextMessage(buffer)) {
-        std::string message = extractNextMessage(buffer);
-        std::list<std::string> cmdList = parseMessage(message);
-        if (!cmdList.empty()) {
-            executeCommand(fd, cmdList);
+    Client *client = clients[fd];
+    std::string &buf = client->getCommandBuffer();
+
+    while (hasNextMessage(buf)) {
+        std::string msg = extractNextMessage(buf);
+        std::list<std::string> cmd = parseMessage(msg);
+        if (!cmd.empty()) {
+            executeCommand(fd, cmd);
         }
     }
 }
 
 bool Server::hasNextMessage(const std::string& buffer) {
-    if (buffer.find('\n') != std::string::npos) {
-        return true;
-    }
-    return false;
+    return buffer.find('\n') != std::string::npos;
 }
 
 std::string Server::extractNextMessage(std::string& buffer) {
@@ -417,35 +466,20 @@ std::string Server::extractNextMessage(std::string& buffer) {
 }
 
 std::string Server::extractMessage(const std::string& buffer, size_t pos) {
-    bool hasCR = false;
-    if (pos > 0 && buffer[pos - 1] == '\r') {
-        hasCR = true;
-    }
-    size_t end;
-    if (hasCR) {
-        end = pos - 1;
-    } else {
-        end = pos;
-    }
+    size_t end = (pos > 0 && buffer[pos - 1] == '\r') ? pos - 1 : pos;
     return buffer.substr(0, end);
 }
 
 std::list<std::string> Server::parseMessage(const std::string& message) {
     std::list<std::string> cmdList;
     size_t colonPos = message.find(" :");
-    std::string prefix = message;
-    std::string trailing;
-
-    if (colonPos != std::string::npos) {
-        prefix = message.substr(0, colonPos);
-        trailing = message.substr(colonPos + 2);
-    }
+    std::string prefix = (colonPos != std::string::npos) ? message.substr(0, colonPos) : message;
+    std::string trailing = (colonPos != std::string::npos) ? message.substr(colonPos + 2) : "";
 
     tokenizePrefix(prefix, cmdList);
-    if (colonPos != std::string::npos) {
+    if (!trailing.empty()) {
         cmdList.push_back(trailing);
     }
-
     return cmdList;
 }
 
@@ -509,25 +543,16 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
 }
 
 void Server::sendUnknownCommandError(Client* client, const std::string& cmd) {
-    std::string nick;
-
-    if (client->getNickname().empty()) {
-        nick = "*";
-    } else {
-        nick = client->getNickname();
-    }
-
+    std::string nick = client->getNickname().empty() ? "*" : client->getNickname();
     client->sendReply(":ircserv " ERR_UNKNOWNCOMMAND " " + nick + " " + cmd + " :Unknown command\r\n");
     Logger::warning("Unknown command received from client " + client->getNickname() + ": " + cmd);
 }
 
 bool Server::isUpperCase(const std::string& str) {
-    unsigned int i = 0;
-    while (i < str.size()) {
+    for (size_t i = 0; i < str.size(); ++i) {
         if (!std::isupper(str[i])) {
             return false;
         }
-        ++i;
     }
     return true;
 }
@@ -540,7 +565,6 @@ void Server::removeChannel(const std::string& channelName) {
         Logger::info("Channel " + channelName + " deleted and erased.");
     }
 }
-
 
 // ------------------- Signal Handling -------------------
 

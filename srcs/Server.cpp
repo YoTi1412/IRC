@@ -476,11 +476,15 @@ std::string Server::extractMessage(const std::string& buffer, size_t pos) {
 std::list<std::string> Server::parseMessage(const std::string& message) {
     std::list<std::string> cmdList;
     size_t colonPos = message.find(" :");
-    std::string prefix = (colonPos != std::string::npos) ? message.substr(0, colonPos) : message;
-    std::string trailing = (colonPos != std::string::npos) ? message.substr(colonPos + 2) : "";
+    std::string prefix = message;
+    std::string trailing;
+    if (colonPos != std::string::npos) {
+        prefix = message.substr(0, colonPos);
+        trailing = message.substr(colonPos + 2);
+    }
 
     tokenizePrefix(prefix, cmdList);
-    if (!trailing.empty()) {
+    if (colonPos != std::string::npos) {
         cmdList.push_back(trailing);
     }
     return cmdList;

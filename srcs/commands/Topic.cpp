@@ -112,7 +112,7 @@ static bool processTopicSet(std::list<std::string>& cmdList, std::list<std::stri
 
     size_t start = topic.find_first_not_of(" \t");
     if (start == std::string::npos) {
-        topic = ""; 
+        topic = "";
     } else {
         topic = topic.substr(start);
         size_t end = topic.find_last_not_of(" \t");

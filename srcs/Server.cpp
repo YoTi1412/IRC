@@ -414,10 +414,10 @@ void Server::sendHttpResponse(int fd) {
     const char *http =
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/plain\r\n"
-        "Content-Length: 29\r\n"
+        "Content-Length: 31\r\n"
         "Connection: close\r\n"
         "\r\n"
-        "This is an IRC server mate ;)";
+        "This is an IRC server mate ;)\r\n";
     send(fd, http, strlen(http), MSG_NOSIGNAL);
 }
 

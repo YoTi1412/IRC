@@ -118,7 +118,7 @@ void handleKick(std::list<std::string> cmdList, Client* client, Server* server)
         channel->removeMember(targetClient);
         if (channel->getMemberCount() == 0)
         {
-            server->removeChannel(channel->getName());
+            server->removeChannel(channelName);
         }
     }
     for (std::map<std::string, Channel*>::iterator it = server->getChannels().begin(); it != server->getChannels().end(); ++it) {

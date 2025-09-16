@@ -2,11 +2,14 @@
 #include "Logger.hpp"
 #include "Utils.hpp"
 #include "Server.hpp"
+#include <stdexcept>
 
 int main(int argc, char** argv)
 {
     if (argc != 3) {
-        Logger::error("Usage: ./ircserv <port> <password>");
+        std::runtime_error e("Usage: ./ircserv <port> <password>");
+        Logger::error(e);
+        throw e;
         return 1;
     }
     try {

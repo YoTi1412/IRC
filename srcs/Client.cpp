@@ -1,6 +1,7 @@
 #include "Client.hpp"
 #include "Utils.hpp"
 #include "Logger.hpp"
+#include <stdexcept>
 
 // Constructor
 Client::Client()
@@ -96,7 +97,9 @@ void Client::handleSendResult(ssize_t bytesSent, const std::string& formattedRep
         }
         else
         {
-            Logger::error(LOG_SEND_FAILED(fd, strerror(errno)));
+            std::invalid_argument e(LOG_SEND_FAILED(fd, strerror(errno)));
+            Logger::error(e);
+            throw e;
         }
         return;
     }

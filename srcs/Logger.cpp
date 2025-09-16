@@ -27,10 +27,6 @@ void Logger::info(const std::string &msg) {
 	std::cout << GREEN << "[INFO] " << msg << RESET << std::endl;
 }
 
-void Logger::error(const std::string &msg) {
-	std::cerr << RED << "[ERROR] " << msg << RESET << std::endl;
-}
-
 void Logger::error(const std::exception& e) {
 	std::cerr << RED << "[ERROR] Exception: " << e.what() << RESET << std::endl;
 }

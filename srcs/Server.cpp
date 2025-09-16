@@ -25,22 +25,25 @@ void Server::validateArgs(const std::string &portStr, const std::string &passwor
 
 void Server::checkEmptyArgs(const std::string &portStr, const std::string &password) {
     if (portStr.empty() || password.empty()) {
-        Logger::error("Validation failed: Arguments are empty!");
-        throw std::invalid_argument("Arguments are empty!");
+        std::invalid_argument e("Arguments are empty!");
+        Logger::error(e);
+        throw e;
     }
 }
 
 void Server::validatePort(const std::string &portStr) {
     if (!Utils::isValidPort(portStr.c_str())) {
-        Logger::error("Validation failed: Invalid port number. Must be between 1024 and 65535.");
-        throw std::invalid_argument("Invalid port number. Must be between 1024 and 65535.");
+        std::invalid_argument e("Invalid port number. Must be between 1024 and 65535.");
+        Logger::error(e);
+        throw e;
     }
 }
 
 void Server::validatePassword(const std::string &password) {
     if (!Utils::isValidPassword(password)) {
-        Logger::error("Validation failed: Invalid password. No spaces or non-printable characters allowed.");
-        throw std::invalid_argument("Invalid password. No spaces or non-printable characters allowed.");
+        std::invalid_argument e("Invalid password. No spaces or non-printable characters allowed.");
+        Logger::error(e);
+        throw e;
     }
 }
 

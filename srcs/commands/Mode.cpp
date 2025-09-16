@@ -176,7 +176,7 @@ bool isParameter(std::string modes)
 {
     if (modes[0] == '+' || modes[0] == '-')
         return false;
-    else 
+    else
         return true;
 }
 
@@ -278,19 +278,19 @@ void handleWithParameter(std::string mode, std::string parameter, Channel* chann
 
 void handleTheMode(std::vector<std::string> modesVector, std::vector<std::string> ParametersVector, Client* client, Channel* channel, Server* server)
 {
+    size_t paramIndex = 0;
     for (size_t i = 0; i < modesVector.size(); i++)
     {
-        size_t paramIndex = 0;
         if (needsParameter(modesVector[i]))
         {
             if (paramIndex >= ParametersVector.size())
             {
                 client->sendReply(std::string(IRC_SERVER) + " " + ERR_NEEDMOREPARAMS + " " +
                           client->getNickname() + " MODE :Not enough parameters");
-                return ;
+                return;
             }
-            handleWithParameter(modesVector[i], ParametersVector[i], channel, client, server);
-            paramIndex++;
+            handleWithParameter(modesVector[i], ParametersVector[paramIndex], channel, client, server);
+            std::cout << paramIndex++;
         }
         else
         {
@@ -348,5 +348,5 @@ void handleMode(std::list<std::string> cmdList, Client* client, Server* server)
             }
         }
     }
-    handleTheMode(modesVector, ParametersVector, client, channel, server);    
+    handleTheMode(modesVector, ParametersVector, client, channel, server);
 }

@@ -67,7 +67,7 @@ void broadcastKickNoComment(Channel* channel, Client* client, const std::string&
     std::ostringstream oss;
     oss << ":" << client->getNickname() << "!" << client->getUsername()
         << "@" << client->getHostname()
-        << " KICK " << channelName << target  << " :";
+        << " KICK " << channelName << " " << target  << " :";
 
     channel->broadcast(oss.str(), client);
 }
@@ -77,7 +77,7 @@ void broadcastKickWithComment(Channel* channel, Client* client, const std::strin
     std::ostringstream oss;
     oss << ":" << client->getNickname() << "!" << client->getUsername()
         << "@" << client->getHostname()
-        << " KICK " << channelName << target  << " :" << comment;
+        << " KICK " << channelName << " " << target  << " :" << comment;
 
     channel->broadcast(oss.str(), client);
 }

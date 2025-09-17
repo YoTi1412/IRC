@@ -108,6 +108,10 @@ const std::map<int, Client*>& Server::getClients() const {
     return this->clients;
 }
 
+const std::string &Server::getName() const {
+    return name;
+}
+
 Client* Server::getClientByNickname(const std::string& nickname) const {
     for (std::map<int, Client*>::const_iterator it = clients.begin(); it != clients.end(); ++it) {
         if (it->second->getNickname() == nickname) {
@@ -544,6 +548,10 @@ void Server::dispatchCommand(const std::string& cmd, std::list<std::string> cmdL
         handleTopic(cmdList, client, this);
     } else if (cmd == "KICK") {
         handleKick(cmdList, client, this);
+    } else if (cmd == "QUIT") {
+        handleQuit(cmdList, client, this);
+    } else if (cmd == "PING") {
+        handlePing(cmdList, client, this);
     } else {
         sendUnknownCommandError(client, cmd);
     }
@@ -567,9 +575,10 @@ bool Server::isUpperCase(const std::string& str) {
 void Server::removeChannel(const std::string& channelName) {
     std::map<std::string, Channel*>::iterator it = channels.find(channelName);
     if (it != channels.end()) {
+        std::string name_copy = channelName;
         delete it->second;
         channels.erase(it);
-        Logger::info("Channel " + channelName + " deleted and erased.");
+        Logger::info("Channel " + name_copy + " deleted and erased.");
     }
 }
 

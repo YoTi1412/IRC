@@ -17,3 +17,5 @@ void handleInvite(std::list<std::string> cmdList, Client* client, Server* server
 void handleTopic(std::list<std::string> cmdList, Client* client, Server* server);
 void handleKick(std::list<std::string> cmdList, Client* client, Server* server);
 void handleNames(std::list<std::string> cmdList, Client* client, Server* server);
+void handlePing(std::list<std::string> cmdList, Client* client, Server* server);
+void handleQuit(std::list<std::string> cmdList, Client* client, Server* server);

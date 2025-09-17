@@ -58,7 +58,6 @@ private:
     void handleClientData(std::vector<pollfd>::iterator& it);
     void processReadResult(int fd, char* buffer, int bytesRead);
     void handleReadError(int fd);
-    void handleClientDisconnect(int fd);
     std::vector<pollfd>::iterator findPollIterator(int fd);
     void handleReadSuccess(int fd, char* buffer, int bytesRead);
     void appendToClientBuffer(int fd, const char* data);
@@ -101,4 +100,5 @@ public:
     const std::map<std::string, Channel*>& getChannels() const;
     Client* getClientByNickname(const std::string& nickname) const;
     void removeChannel(const std::string& channelName);
+    void handleClientDisconnect(int fd);
 };

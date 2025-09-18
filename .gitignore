@@ -1,2 +1,4 @@
 .vscode
 test_irc.txt
+compile_commands.json
+.cache/

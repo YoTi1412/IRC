@@ -7,7 +7,7 @@
 bool Server::signal = false;
 
 Server::Server(const std::string &portStr, const std::string &password)
-    : processedFds()
+    : epfd(-1)
 {
     validateArgs(portStr, password);
     name = "ircserv";
@@ -51,6 +51,10 @@ Server::~Server() {
     cleanupAllClients();
     cleanupAllChannels();
     closeSocket();
+    if (epfd >= 0) {
+        close(epfd);
+        Logger::info("Epoll file descriptor closed.");
+    }
     logShutdown();
 }
 
@@ -124,14 +128,36 @@ Client* Server::getClientByNickname(const std::string& nickname) const {
 // ------------------- Socket Initialization -------------------
 
 void Server::serverInit() {
+    increaseFdLimit();
     createSocket();
     configureServerAddress();
     setSocketTimeout();
     setReuseAddr();
     bindSocket();
     listenOnSocket();
-    initPollFd();
+    initEpoll();
     logInitialization();
+}
+
+void Server::increaseFdLimit() {
+    struct rlimit rlim;
+    if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
+        Logger::info("Current FD limit: soft=" + Utils::intToString(rlim.rlim_cur) +
+                     ", hard=" + Utils::intToString(rlim.rlim_max));
+
+        // Set soft limit to hard limit or 10000, whichever is smaller
+        rlim_t newLimit = (rlim.rlim_max == RLIM_INFINITY || rlim.rlim_max > 10000) ? 10000 : rlim.rlim_max;
+        if (rlim.rlim_cur < newLimit) {
+            rlim.rlim_cur = newLimit;
+            if (setrlimit(RLIMIT_NOFILE, &rlim) == 0) {
+                Logger::info("Successfully increased FD limit to: " + Utils::intToString(newLimit));
+            } else {
+                Logger::warning("Failed to increase FD limit: " + std::string(strerror(errno)));
+            }
+        }
+    } else {
+        Logger::warning("Failed to get current FD limit: " + std::string(strerror(errno)));
+    }
 }
 
 void Server::createSocket() {
@@ -192,12 +218,23 @@ void Server::listenOnSocket() {
     Logger::info("Server listening on socket with maximum connections.");
 }
 
-void Server::initPollFd() {
-    pollfd pfd;
-    pfd.fd = sock_fd;
-    pfd.events = POLLIN;
-    pollFds.push_back(pfd);
-    Logger::debug("Poll file descriptor initialized for socket.");
+void Server::initEpoll() {
+    epfd = epoll_create1(EPOLL_CLOEXEC);
+    if (epfd < 0) {
+        std::runtime_error e("Failed to create epoll instance: " + std::string(strerror(errno)));
+        Logger::error(e);
+        throw e;
+    }
+
+    struct epoll_event ev;
+    ev.events = EPOLLIN;
+    ev.data.fd = sock_fd;
+    if (epoll_ctl(epfd, EPOLL_CTL_ADD, sock_fd, &ev) < 0) {
+        std::runtime_error e("Failed to add socket to epoll: " + std::string(strerror(errno)));
+        Logger::error(e);
+        throw e;
+    }
+    Logger::debug("Epoll instance created and socket added successfully.");
 }
 
 void Server::logInitialization() {
@@ -207,52 +244,51 @@ void Server::logInitialization() {
 // ------------------- Event Loop -------------------
 
 void Server::serverRun() {
+    struct epoll_event events[MAX_EVENTS];
     while (!signal) {
-        std::vector<pollfd> pollCopy = pollFds;
-        pollForEvents(pollCopy);
-        processedFds.clear();
-        processEvents(pollCopy);
+        int nfds = 0;
+        waitForEvents(events, nfds);
+        if (nfds > 0) {
+            processedFds.clear();
+            processEvents(events, nfds);
+        }
     }
     Logger::info("Server run loop terminated due to signal.");
 }
 
-void Server::pollForEvents(std::vector<pollfd>& pollCopy) {
-    int ret = poll(&pollCopy[0], pollCopy.size(), -1);
-    if (ret < 0 && errno != EINTR) {
-        std::runtime_error e("Poll failed: " + std::string(strerror(errno)));
+void Server::waitForEvents(struct epoll_event events[], int& nfds) {
+    nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
+    if (nfds < 0 && errno != EINTR) {
+        std::runtime_error e("Epoll wait failed: " + std::string(strerror(errno)));
         Logger::error(e);
         throw e;
     }
-    if (ret >= 0) {
-        Logger::debug("Poll event checked for " + Utils::intToString(pollCopy.size()) + " file descriptors.");
+    if (nfds >= 0) {
+        Logger::debug("Epoll wait returned " + Utils::intToString(nfds) + " ready file descriptors.");
     }
 }
 
-void Server::processEvents(const std::vector<pollfd>& pollCopy) {
-    unsigned int i = 0;
-    while (i < pollCopy.size()) {
-        if (pollCopy[i].revents & POLLIN) {
-            if (pollCopy[i].fd == sock_fd) {
-                acceptNewConnection();
-            } else {
-                handleClientPoll(pollCopy[i].fd);
-            }
+void Server::processEvents(struct epoll_event events[], int nfds) {
+    for (int i = 0; i < nfds; ++i) {
+        int fd = events[i].data.fd;
+        uint32_t eventFlags = events[i].events;
+
+        if (fd == sock_fd && (eventFlags & EPOLLIN)) {
+            acceptNewConnection();
+        } else {
+            handleClientEvent(fd, eventFlags);
         }
-        ++i;
     }
-    Logger::debug("Processed events for " + Utils::intToString(pollCopy.size()) + " file descriptors.");
+    Logger::debug("Processed events for " + Utils::intToString(nfds) + " file descriptors.");
 }
 
-void Server::handleClientPoll(int fd) {
-    std::vector<pollfd>::iterator it = pollFds.begin();
-    while (it != pollFds.end()) {
-        if (it->fd == fd) {
-            handleClientData(it);
-            break;
-        }
-        ++it;
+void Server::handleClientEvent(int fd, uint32_t events) {
+    if (events & (EPOLLHUP | EPOLLERR)) {
+        Logger::debug("Client fd " + Utils::intToString(fd) + " disconnected (EPOLLHUP/EPOLLERR)");
+        handleClientDisconnect(fd);
+    } else if (events & EPOLLIN) {
+        handleClientData(fd);
     }
-    Logger::debug("Handled poll event for client fd: " + Utils::intToString(fd));
 }
 
 // ------------------- Client Connection -------------------
@@ -266,7 +302,11 @@ void Server::acceptNewConnection() {
 
 void Server::handleAcceptResult(int clientFd, sockaddr_in& clientAddr) {
     if (clientFd < 0) {
-        Logger::warning("Accept failed: " + std::string(strerror(errno)));
+        if (errno == EMFILE || errno == ENFILE) {
+            Logger::warning("Accept failed due to FD limit: " + std::string(strerror(errno)));
+        } else {
+            Logger::warning("Accept failed: " + std::string(strerror(errno)));
+        }
         return;
     }
     configureNewClient(clientFd, clientAddr);
@@ -282,7 +322,7 @@ void Server::configureNewClient(int clientFd, sockaddr_in& clientAddr) {
     }
 
     sendIrcGreeting(client);
-    addClientToPoll(clientFd);
+    addClientToEpoll(clientFd);
 }
 
 static bool looksLikeHTTP(const char *buf) {
@@ -290,7 +330,6 @@ static bool looksLikeHTTP(const char *buf) {
            strncmp(buf, "POST ", 5) == 0 ||
            strncmp(buf, "HEAD ", 5) == 0;
 }
-
 
 bool Server::tryHandleHttpClient(int clientFd) {
     char buffer[BUFFER_SIZE] = {0};
@@ -323,12 +362,16 @@ void Server::sendIrcGreeting(Client* client) {
     client->setGreeted(true);
 }
 
-void Server::addClientToPoll(int clientFd) {
-    pollfd pfd;
-    pfd.fd = clientFd;
-    pfd.events = POLLIN;
-    pfd.revents = 0;
-    pollFds.push_back(pfd);
+void Server::addClientToEpoll(int clientFd) {
+    struct epoll_event ev;
+    ev.events = EPOLLIN | EPOLLHUP | EPOLLERR;
+    ev.data.fd = clientFd;
+    if (epoll_ctl(epfd, EPOLL_CTL_ADD, clientFd, &ev) < 0) {
+        Logger::warning("Failed to add client fd " + Utils::intToString(clientFd) + " to epoll: " + strerror(errno));
+        handleClientDisconnect(clientFd);
+    } else {
+        Logger::debug("Added client fd " + Utils::intToString(clientFd) + " to epoll.");
+    }
 }
 
 Client* Server::createNewClient(int clientFd, sockaddr_in& clientAddr) {
@@ -349,10 +392,10 @@ void Server::logNewConnection(int clientFd, const char* ip, int port) {
 
 // ------------------- Client Data Handling -------------------
 
-void Server::handleClientData(std::vector<pollfd>::iterator& it) {
+void Server::handleClientData(int fd) {
     char buffer[BUFFER_SIZE] = {0};
-    int bytesRead = read(it->fd, buffer, sizeof(buffer) - 1);
-    processReadResult(it->fd, buffer, bytesRead);
+    int bytesRead = read(fd, buffer, sizeof(buffer) - 1);
+    processReadResult(fd, buffer, bytesRead);
 }
 
 void Server::processReadResult(int fd, char* buffer, int bytesRead) {
@@ -378,9 +421,9 @@ void Server::handleClientDisconnect(int fd) {
     }
     processedFds.insert(fd);
 
-    std::vector<pollfd>::iterator pollIt = findPollIterator(fd);
-    if (pollIt != pollFds.end()) {
-        pollFds.erase(pollIt);
+    // Remove from epoll
+    if (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL) < 0) {
+        Logger::debug("Failed to remove fd " + Utils::intToString(fd) + " from epoll (may already be removed)");
     }
 
     std::map<int, Client*>::iterator clientIt = clients.find(fd);
@@ -406,15 +449,6 @@ void Server::handleClientDisconnect(int fd) {
         close(fd);
     }
     Logger::info("Client disconnected, fd: " + Utils::intToString(fd));
-}
-
-std::vector<pollfd>::iterator Server::findPollIterator(int fd) {
-    for (std::vector<pollfd>::iterator it = pollFds.begin(); it != pollFds.end(); ++it) {
-        if (it->fd == fd) {
-            return it;
-        }
-    }
-    return pollFds.end();
 }
 
 void Server::sendHttpResponse(int fd) {

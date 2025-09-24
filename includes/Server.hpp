@@ -4,8 +4,11 @@
 #include "Replies.hpp"
 #include "Command.hpp"
 #include "Channel.hpp"
+#include <sys/epoll.h>
+#include <sys/resource.h>
 
 #define BUFFER_SIZE 1024
+#define MAX_EVENTS 1000
 
 class Client; // Forward declaration
 
@@ -16,9 +19,9 @@ private:
     std::string                     password;
     static bool                     signal;
     int                             sock_fd;
+    int                             epfd;
     struct sockaddr_in              serverAddress;
     std::string                     createdtime;
-    std::vector<pollfd>             pollFds;
     std::map<int, Client*>          clients;
     std::set<int>                   processedFds;
     std::map<std::string, Channel*> channels;
@@ -29,7 +32,8 @@ private:
     void setSocketTimeout();
     void bindSocket();
     void listenOnSocket();
-    void initPollFd();
+    void initEpoll();
+    void increaseFdLimit();
     void logInitialization();
     void validateArgs(const std::string &portStr, const std::string &password);
     void checkEmptyArgs(const std::string &portStr, const std::string &password);
@@ -40,9 +44,9 @@ private:
     void logShutdown();
 
     // Helper methods for run
-    void pollForEvents(std::vector<pollfd>& pollCopy);
-    void processEvents(const std::vector<pollfd>& pollCopy);
-    void handleClientPoll(int fd);
+    void waitForEvents(struct epoll_event events[], int& nfds);
+    void processEvents(struct epoll_event events[], int nfds);
+    void handleClientEvent(int fd, uint32_t events);
 
     // Helper methods for client connection
     void acceptNewConnection();
@@ -52,13 +56,12 @@ private:
     void logNewConnection(int clientFd, const char* ip, int port);
     bool tryHandleHttpClient(int clientFd);
     void sendIrcGreeting(Client* client);
-    void addClientToPoll(int clientFd);
+    void addClientToEpoll(int clientFd);
 
     // Helper methods for client data handling
-    void handleClientData(std::vector<pollfd>::iterator& it);
+    void handleClientData(int fd);
     void processReadResult(int fd, char* buffer, int bytesRead);
     void handleReadError(int fd);
-    std::vector<pollfd>::iterator findPollIterator(int fd);
     void handleReadSuccess(int fd, char* buffer, int bytesRead);
     void appendToClientBuffer(int fd, const char* data);
     void processClientBuffer(int fd);

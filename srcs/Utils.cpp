@@ -42,6 +42,7 @@ std::string Utils::getFormattedTime() {
 void Utils::setupSignalHandler() {
     signal(SIGINT, Server::sigHandler);
     signal(SIGQUIT, Server::sigHandler);
+    signal(SIGPIPE, SIG_IGN);
 }
 
 std::string Utils::intToString(int value) {

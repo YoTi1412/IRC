@@ -20,7 +20,15 @@ void sendNotRegisteredError(Client* client, Server* server) {
 std::string extractQuitMessage(std::list<std::string>& cmdList) {
     if (cmdList.size() > 1) {
         cmdList.pop_front();
-        return cmdList.back();
+
+        std::string message;
+        for (std::list<std::string>::iterator it = cmdList.begin(); it != cmdList.end(); ++it) {
+            if (!message.empty()) {
+                message += " ";
+            }
+            message += *it;
+        }
+        return message;
     }
     return "Client Quit";
 }

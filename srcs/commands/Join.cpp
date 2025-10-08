@@ -43,13 +43,7 @@ static bool isValidChannelName(const std::string& name) {
  * @return true if parameters are valid, false otherwise.
  */
 static bool validateJoinParameters(std::list<std::string>& cmdList, Client* client) {
-    if (cmdList.size() < 2) {
-        std::string nickname = client->getNickname().empty() ? "*" : client->getNickname();
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NEEDMOREPARAMS + " " +
-                          nickname + " JOIN :Not enough parameters\r\n");
-        return false;
-    }
-    return true;
+    return CommandUtils::validateParameters(cmdList, client, "JOIN", 2);
 }
 
 /**
@@ -64,15 +58,7 @@ static bool validateJoinParameters(std::list<std::string>& cmdList, Client* clie
  *
  * @return true if the client is registered, false otherwise.
  */
-static bool validateClientRegistration(Client* client) {
-    if (!client->isRegistered()) {
-        std::string nickname = client->getNickname().empty() ? "*" : client->getNickname();
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOTREGISTERED + " " +
-                          nickname + " :You have not registered\r\n");
-        return false;
-    }
-    return true;
-}
+
 
 /**
  * @brief Creates or retrieves a channel as per RFC 2812 (Section 3.2.1).
@@ -258,7 +244,7 @@ static void processSingleJoin(const std::string& channelName, const std::string&
  * - Processes each channel join individually.
  */
 void handleJoin(std::list<std::string> cmdList, Client* client, Server* server) {
-    if (!validateJoinParameters(cmdList, client) || !validateClientRegistration(client)) {
+    if (!validateJoinParameters(cmdList, client) || !CommandUtils::validateClientRegistration(client)) {
         return;
     }
 

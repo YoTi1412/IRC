@@ -22,29 +22,12 @@ static bool isValidChannelName(const std::string& name) {
 /**
  * @brief Verifies client registration status for PART command as per RFC 2812 (Section 3.2.2).
  */
-static bool validateClientRegistration(Client* client) {
-    if (!client->isRegistered()) {
-        std::string nickname = client->getNickname().empty() ? "*" : client->getNickname();
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOTREGISTERED + " " +
-                          nickname + " :You have not registered");
-        return false;
-    }
-    return true;
-}
+
 
 /**
  * @brief Retrieves the channel if it exists as per RFC 2812 (Section 3.2.2).
  */
-static Channel* getChannel(const std::string& channelName, Client* client, Server* server) {
-    std::map<std::string, Channel*>& channels = server->getChannels();
-    std::map<std::string, Channel*>::iterator it = channels.find(channelName);
-    if (it == channels.end()) {
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOSUCHCHANNEL + " " +
-                          client->getNickname() + " " + channelName + " :No such channel");
-        return NULL;
-    }
-    return it->second;
-}
+
 
 /**
  * @brief Checks if the client is a member of the channel as per RFC 2812 (Section 3.2.2).
@@ -93,7 +76,7 @@ static void processSinglePart(const std::string& channelName, const std::string&
         return;
     }
 
-    Channel* channel = getChannel(channelName, client, server);
+    Channel* channel = CommandUtils::getChannel(server, channelName, client);
     if (channel == NULL) return;
 
     if (!checkMembership(channel, client)) return;
@@ -135,7 +118,7 @@ static bool handleMissingParams(const std::string& channelsStr, Client* client) 
  * @brief Handles the PART command as per RFC 2812 (Section 3.2.2).
  */
 void handlePart(std::list<std::string> cmdList, Client* client, Server* server) {
-    if (!validateClientRegistration(client)) return;
+    if (!CommandUtils::validateClientRegistration(client)) return;
 
     if (cmdList.size() < 2) {
         std::string nickname = client->getNickname().empty() ? "*" : client->getNickname();

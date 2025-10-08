@@ -9,42 +9,20 @@
  * Ensures at least the channel name is provided; returns false with ERR_NEEDMOREPARAMS (461) if insufficient.
  */
 static bool validateParameters(std::list<std::string>& cmdList, Client* client) {
-    if (cmdList.size() < 2) {
-        std::string nickname = client->getNickname().empty() ? "*" : client->getNickname();
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NEEDMOREPARAMS + " " +
-                          nickname + " TOPIC :Not enough parameters\r\n");
-        return false;
-    }
-    return true;
+    return CommandUtils::validateParameters(cmdList, client, "TOPIC", 2);
 }
 
 /**
  * @brief Validates client registration status per RFC 2812 §3.1.
  * Ensures the client is registered; returns false with ERR_NOTREGISTERED (451) if not.
  */
-static bool validateClientRegistration(Client* client) {
-    if (!client->isRegistered()) {
-        std::string nickname = client->getNickname().empty() ? "*" : client->getNickname();
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOTREGISTERED + " " +
-                          nickname + " :You have not registered\r\n");
-        return false;
-    }
-    return true;
-}
+
 
 /**
  * @brief Retrieves the channel object for the given name per RFC 2812 §4.2.4.
  * Returns NULL and sends ERR_NOSUCHCHANNEL (403) if the channel does not exist.
  */
-static Channel* getChannel(Server* server, const std::string& channelName, Client* client) {
-    std::map<std::string, Channel*>::iterator it = server->getChannels().find(channelName);
-    if (it == server->getChannels().end()) {
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOSUCHCHANNEL + " " +
-                          client->getNickname() + " " + channelName + " :No such channel\r\n");
-        return NULL;
-    }
-    return it->second;
-}
+
 
 /**
  * @brief Checks if the client is a member of the channel per RFC 2812 §4.2.4.
@@ -134,7 +112,7 @@ static bool processTopicSet(std::list<std::string>& cmdList, std::list<std::stri
  * Coordinates validation, channel access, and topic viewing/setting logic.
  */
 void handleTopic(std::list<std::string> cmdList, Client* client, Server* server) {
-    if (!validateParameters(cmdList, client) || !validateClientRegistration(client)) {
+    if (!validateParameters(cmdList, client) || !CommandUtils::validateClientRegistration(client)) {
         return;
     }
 
@@ -142,7 +120,7 @@ void handleTopic(std::list<std::string> cmdList, Client* client, Server* server)
     ++it;
     std::string channelName = *it;
 
-    Channel* channel = getChannel(server, channelName, client);
+    Channel* channel = CommandUtils::getChannel(server, channelName, client);
     if (!channel || !checkExistingMembership(channel, client)) {
         return;
     }

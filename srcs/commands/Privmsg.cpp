@@ -16,20 +16,7 @@
  *
  * @return true if the client is registered, false otherwise.
  */
-static bool validateClientRegistration(Client* client) {
-    if (!client->isRegistered()) {
-        std::string nickname;
-        if (client->getNickname().empty()) {
-            nickname = "*";
-        } else {
-            nickname = client->getNickname();
-        }
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOTREGISTERED + " " +
-                          nickname + " :You have not registered");
-        return false;
-    }
-    return true;
-}
+
 
 /**
  * @brief Checks if PRIVMSG command has sufficient parameters as per RFC 2812 (Section 3.3.1).
@@ -47,24 +34,11 @@ static bool validateClientRegistration(Client* client) {
  * @return true if parameters are valid, false otherwise.
  */
 static bool validatePrivmsgParameters(std::list<std::string>& cmdList, Client* client) {
-    if (cmdList.size() < 2) {
-        std::string nickname;
-        if (client->getNickname().empty()) {
-            nickname = "*";
-        } else {
-            nickname = client->getNickname();
-        }
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NORECIPIENT + " " +
-                          nickname + " :No recipient given (PRIVMSG)");
+    if (!CommandUtils::validateParameters(cmdList, client, "PRIVMSG", 2)) {
         return false;
     }
     if (cmdList.size() < 3) {
-        std::string nickname;
-        if (client->getNickname().empty()) {
-            nickname = "*";
-        } else {
-            nickname = client->getNickname();
-        }
+        std::string nickname = CommandUtils::getNicknameOrDefault(client, "*");
         client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOTEXTTOSEND + " " +
                           nickname + " :No text to send");
         return false;
@@ -188,7 +162,7 @@ static void processUserMessage(const std::string& target, const std::string& ful
  * - Logs the PRIVMSG event.
  */
 void handlePrivmsg(std::list<std::string> cmdList, Client* client, Server* server) {
-    if (!validateClientRegistration(client) || !validatePrivmsgParameters(cmdList, client)) {
+    if (!CommandUtils::validateClientRegistration(client) || !validatePrivmsgParameters(cmdList, client)) {
         return;
     }
 

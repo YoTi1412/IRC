@@ -7,13 +7,7 @@
  * Sends ERR_NEEDMOREPARAMS when a client issues PING without parameters.
  */
 void sendNeedMoreParamsError(Client* client, Server* server) {
-    std::string nickname;
-    if (client->getNickname().empty()) {
-        nickname = "*";
-    } else {
-        nickname = client->getNickname();
-    }
-
+    std::string nickname = CommandUtils::getNicknameOrDefault(client, "*");
     client->sendReply(":" + server->getName() + " " + ERR_NEEDMOREPARAMS + " " +
                       nickname + " PING :Not enough parameters");
 }

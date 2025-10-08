@@ -13,7 +13,7 @@ Server::Server(const std::string &portStr, const std::string &password)
     name = "ircserv";
     port = std::atoi(portStr.c_str());
     this->password = password;
-    createdtime = Utils::getFormattedTime();
+    createdtime = Utils::formatTime(time(NULL));
     Logger::info("Server instance created with port " + portStr + " and password set.");
 }
 
@@ -70,10 +70,6 @@ std::map<std::string, Channel*>& Server::getChannels() {
     return channels;
 }
 
-const std::map<std::string, Channel*>& Server::getChannels() const {
-    return channels;
-}
-
 void Server::cleanupAllClients() {
     std::map<int, Client*>::iterator it = clients.begin();
     while (it != clients.end()) {
@@ -105,10 +101,6 @@ const std::string &Server::getCreatedTime() const {
 }
 
 std::map<int, Client*>& Server::getClients() {
-    return this->clients;
-}
-
-const std::map<int, Client*>& Server::getClients() const {
     return this->clients;
 }
 
@@ -321,7 +313,13 @@ void Server::configureNewClient(int clientFd, sockaddr_in& clientAddr) {
         return;
     }
 
-    sendIrcGreeting(client);
+    // Check if client still exists after tryHandleHttpClient (could be deleted by QUIT command)
+    std::map<int, Client*>::iterator clientIt = clients.find(clientFd);
+    if (clientIt == clients.end()) {
+        return; // Client was disconnected during tryHandleHttpClient
+    }
+
+    sendIrcGreeting(clientIt->second);
     addClientToEpoll(clientFd);
 }
 
@@ -351,7 +349,11 @@ bool Server::tryHandleHttpClient(int clientFd) {
     }
 
     // Not HTTP, process as IRC
-    Client* client = clients[clientFd];
+    std::map<int, Client*>::iterator clientIt = clients.find(clientFd);
+    if (clientIt == clients.end()) {
+        return true; // Client was disconnected, treat as handled
+    }
+    Client* client = clientIt->second;
     client->appendToCommandBuffer(buffer);
     processClientBuffer(clientFd);
     return false;
@@ -363,6 +365,12 @@ void Server::sendIrcGreeting(Client* client) {
 }
 
 void Server::addClientToEpoll(int clientFd) {
+    // Check if client still exists before adding to epoll
+    std::map<int, Client*>::iterator clientIt = clients.find(clientFd);
+    if (clientIt == clients.end()) {
+        return; // Client was disconnected, don't add to epoll
+    }
+
     struct epoll_event ev;
     ev.events = EPOLLIN | EPOLLHUP | EPOLLERR;
     ev.data.fd = clientFd;

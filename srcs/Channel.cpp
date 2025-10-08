@@ -12,7 +12,7 @@ Channel::Channel(const std::string& channelName, Client* creator)
       limit(0),
       secret(false)
 {
-    createdTime = Utils::getFormattedTime();
+    createdTime = Utils::formatTime(time(NULL));
     if (creator) {
         Logger::info("Channel " + name + " created by " + creator->getNickname());
     }

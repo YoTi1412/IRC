@@ -10,7 +10,7 @@
 #define BUFFER_SIZE 1024
 #define MAX_EVENTS 1000
 
-class Client; // Forward declaration
+class Client;
 
 class Server {
 private:
@@ -98,9 +98,9 @@ public:
     const std::string &getCreatedTime() const;
     const std::string &getPassword() const;
     std::map<int, Client*>& getClients();
-    const std::map<int, Client*>& getClients() const;
+
     std::map<std::string, Channel*>& getChannels();
-    const std::map<std::string, Channel*>& getChannels() const;
+
     Client* getClientByNickname(const std::string& nickname) const;
     void removeChannel(const std::string& channelName);
     void handleClientDisconnect(int fd);

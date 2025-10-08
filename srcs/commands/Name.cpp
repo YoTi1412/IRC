@@ -5,19 +5,6 @@
 #include "Channel.hpp"
 
 /**
- * @brief Verifies client registration status for NAMES command as per RFC 2812 (Section 3.2.5).
- */
-static bool validateClientRegistration(Client* client) {
-    if (!client->isRegistered()) {
-        std::string nickname = client->getNickname().empty() ? "*" : client->getNickname();
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOTREGISTERED + " " +
-                          nickname + " :You have not registered");
-        return false;
-    }
-    return true;
-}
-
-/**
  * @brief Sends NAMES reply for a single channel as per RFC 2812 (Section 3.2.5).
  */
 static void sendNamesReply(Channel* channel, Client* client) {
@@ -83,9 +70,9 @@ static void sendAllNames(Server* server, Client* client) {
     if (!strayUsers.empty()) {
         client->sendReply(std::string(IRC_SERVER) + " " + RPL_NAMREPLY + " " +
                           client->getNickname() + " = * :" + strayUsers);
+        client->sendReply(std::string(IRC_SERVER) + " " + RPL_ENDOFNAMES + " " +
+                          client->getNickname() + " * :End of NAMES list");
     }
-    client->sendReply(std::string(IRC_SERVER) + " " + RPL_ENDOFNAMES + " " +
-                      client->getNickname() + " * :End of NAMES list");
 }
 
 /**
@@ -101,9 +88,25 @@ static void handleNamesNoParams(Server* server, Client* client) {
 static void handleNamesWithChannels(std::list<std::string> channels, Client* client, Server* server) {
     std::map<std::string, Channel*>& chMap = server->getChannels();
     for (std::list<std::string>::iterator chanIt = channels.begin(); chanIt != channels.end(); ++chanIt) {
-        std::map<std::string, Channel*>::iterator chIter = chMap.find(*chanIt);
+        std::string channelName = *chanIt;
+        // Trim leading/trailing whitespace
+        size_t start = channelName.find_first_not_of(" \t");
+        size_t end = channelName.find_last_not_of(" \t");
+        if (start == std::string::npos) {
+            channelName = "";
+        } else {
+            channelName = channelName.substr(start, end - start + 1);
+        }
+        if (channelName.empty()) {
+            handleNamesNoParams(server, client);
+            continue;
+        }
+        std::map<std::string, Channel*>::iterator chIter = chMap.find(channelName);
         if (chIter != chMap.end()) {
             sendNamesReply(chIter->second, client);
+        } else {
+            client->sendReply(std::string(IRC_SERVER) + " " + RPL_ENDOFNAMES + " " +
+                              client->getNickname() + " " + channelName + " :End of NAMES list");
         }
     }
 }
@@ -112,21 +115,21 @@ static void handleNamesWithChannels(std::list<std::string> channels, Client* cli
  * @brief Handles the NAMES command as per RFC 2812 (Section 3.2.5).
  */
 void handleNames(std::list<std::string> cmdList, Client* client, Server* server) {
-    if (!validateClientRegistration(client)) {
+    if (!CommandUtils::validateClientRegistration(client)) {
         return;
     }
-
     std::list<std::string>::iterator it = cmdList.begin();
     ++it;
-
     if (it == cmdList.end()) {
         handleNamesNoParams(server, client);
         return;
     }
-
     std::string channelsStr = *it;
     ++it;
-
+    if (channelsStr.empty()) {
+        handleNamesNoParams(server, client);
+        return;
+    }
     std::list<std::string> channels = Utils::split(channelsStr, ',');
     handleNamesWithChannels(channels, client, server);
 }

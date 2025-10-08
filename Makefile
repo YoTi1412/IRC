@@ -12,6 +12,7 @@ SRCS        = main.cpp \
               Channel.cpp \
               Utils.cpp \
               Logger.cpp \
+              commands/CommandUtils.cpp \
               commands/Invite.cpp \
               commands/Join.cpp \
               commands/Kick.cpp \

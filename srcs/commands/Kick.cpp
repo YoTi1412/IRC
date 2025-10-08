@@ -2,48 +2,12 @@
 
 
 static bool validateJoinParameters(std::list<std::string>& cmdList, Client* client) {
-    if (cmdList.size() < 2) {
-        std::string nickname;
-        if (client->getNickname().empty()) {
-            nickname = "*";
-        } else {
-            nickname = client->getNickname();
-        }
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NEEDMOREPARAMS + " " +
-                          nickname + " TOPIC :Not enough parameters");
-        return false;
-    }
-    return true;
+    return CommandUtils::validateParameters(cmdList, client, "KICK", 2);
 }
 
-static bool validateClientRegistration(Client* client) {
-    if (!client->isRegistered()) {
-        std::string nickname;
-        if (client->getNickname().empty()) {
-            nickname = "*";
-        } else {
-            nickname = client->getNickname();
-        }
-        client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOTREGISTERED + " " +
-                          nickname + " :You have not registered");
-        return false;
-    }
-    return true;
-}
 
-static Channel* getChannel(Server* server, const std::string& channelName, Client* client)
-{
-    std::map<std::string, Channel*>::iterator it = server->getChannels().find(channelName);
-    if (it == server->getChannels().end())
-    {
-        std::ostringstream oss;
-        oss << IRC_SERVER << " " << ERR_NOSUCHCHANNEL << " "
-            << client->getNickname() << " " << channelName << " :No such channel";
-        client->sendReply(oss.str());
-        return NULL;
-    }
-    return it->second;
-}
+
+
 
 static bool checkExistingMembership(Channel* channel, Client* client)
 {
@@ -84,7 +48,7 @@ void broadcastKickWithComment(Channel* channel, Client* client, const std::strin
 
 void handleKick(std::list<std::string> cmdList, Client* client, Server* server)
 {
-    if (!validateJoinParameters(cmdList, client) || !validateClientRegistration(client))
+    if (!validateJoinParameters(cmdList, client) || !CommandUtils::validateClientRegistration(client))
     {
         return;
     }
@@ -92,7 +56,7 @@ void handleKick(std::list<std::string> cmdList, Client* client, Server* server)
     ++it;
     std::string channelName = *it;
 
-    Channel* channel = getChannel(server, channelName, client);
+    Channel* channel = CommandUtils::getChannel(server, channelName, client);
     if (!channel || !checkExistingMembership(channel, client))
         return;
     ++it;

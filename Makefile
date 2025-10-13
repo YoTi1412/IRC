@@ -37,6 +37,12 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $(OBJS)
 
+bonus: $(NAME) bot/cisor_bot
+
+bot/cisor_bot: bot/main.cpp bot/Bot.cpp bot/PlayerStats.cpp bot/Room.cpp
+	@mkdir -p bot
+	$(CC) $(CFLAGS) -o $@ bot/main.cpp bot/Bot.cpp bot/PlayerStats.cpp bot/Room.cpp
+
 $(OBJ_PATH)%.o: $(SRCS_PATH)%.cpp
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@

@@ -701,7 +701,6 @@ int Bot::run()
     send_all(std::string("PASS ") + password + "\r\n");
     send_all(std::string("NICK cisor\r\n"));
     send_all(std::string("USER bot 0 * :cisor bot\r\n"));
-    send_all(std::string("JOIN #general\r\n"));
 
     char buf[BUFFER+1];
     while (true) 

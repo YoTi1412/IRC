@@ -14,6 +14,9 @@ private:
     std::string password;
     int sock;
     std::map<std::string, PlayerStats> stats;
+
+
+
     // multiplayer rooms
     std::map<std::string, Room> rooms; // key: room name
     std::map<std::string, std::string> playerRoom; // nick -> room name
@@ -24,22 +27,36 @@ private:
     static std::string choose_rps();
     static int compare_rps(const std::string &player, const std::string &bot);
     // helpers to split handleLine
-    bool isPing(const std::string &line, std::string &token) const;
     bool extractPrivmsg(const std::string &line, std::string &sender, std::string &target, std::string &message) const;
-    bool isScoreOrStats(const std::string &lower) const;
+    bool isScore(const std::string &lower) const;
     bool parsePlayerMove(const std::string &message, std::string &playerTok) const; // returns normalized "rock|paper|cisor" or false
     void handleScoreRequest(const std::string &sender);
     void handleMoveRound(const std::string &sender, const std::string &playerTok);
-    // multiplayer helpers
+    void handleHelpCommand(const std::string &sender);
+
+
+
+    // multiplayer
     bool parseCommand(const std::string &msg, std::vector<std::string> &out) const; // split by spaces, lowercased
     void handleMultiplayerCommand(const std::string &sender, const std::vector<std::string> &cmd);
     void handleMultiplayerMove(const std::string &sender, const std::string &move);
     void notifyRoomBothChose(Room &room);
     void send_room_scoreboard(const std::string &sender);
+    void auth(const std::string &password);
+    void mainLoop();
+    int initSocket(struct sockaddr_in &srv);
 public:
     Bot(const std::string &host, int port, const std::string &password);
     ~Bot();
     int run();
 };
+
+
+std::string toLowerStr(const std::string &s);
+std::string trimTrailingPunct(const std::string &s);
+bool isValidMoveToken(const std::string &t);
+void trim_crlf(std::string &s);
+
+
 
 #endif

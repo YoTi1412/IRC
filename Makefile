@@ -1,6 +1,6 @@
-NAME    = ircserv
-CC      = c++
-CFLAGS  = -Wall -Werror -Wextra -std=c++98 -g -fsanitize=address
+NAME        = ircserv
+CC          = c++
+CFLAGS      = -Wall -Werror -Wextra -std=c++98 -g -fsanitize=address
 
 SRCS_PATH   = srcs/
 CMD_PATH    = srcs/commands/
@@ -30,6 +30,17 @@ SRCS        = main.cpp \
 OBJ_PATH    = objs/
 OBJS        = $(addprefix $(OBJ_PATH), $(SRCS:.cpp=.o))
 
+BONUS_PATH      = bot/
+BONUS_OBJ_PATH  = bot/objects/
+BONUS_SRCS      = main.cpp \
+                  Bot.cpp \
+                  PlayerStats.cpp \
+                  Room.cpp \
+                  handleGameCore.cpp \
+                  handleMultiplayer.cpp \
+                  utils.cpp
+BONUS_OBJS      = $(addprefix $(BONUS_OBJ_PATH), $(BONUS_SRCS:.cpp=.o))
+
 INCLUDES    = -I $(INC_PATH)
 
 all: $(NAME)
@@ -37,22 +48,26 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $(OBJS)
 
-bonus: $(NAME) bot/cisor_bot
-
-bot/cisor_bot: bot/main.cpp bot/Bot.cpp bot/PlayerStats.cpp bot/Room.cpp
-	@mkdir -p bot
-	$(CC) $(CFLAGS) -o $@ bot/main.cpp bot/Bot.cpp bot/PlayerStats.cpp bot/Room.cpp
-
 $(OBJ_PATH)%.o: $(SRCS_PATH)%.cpp
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
+$(BONUS_OBJ_PATH)%.o: $(BONUS_PATH)%.cpp
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+bonus: $(NAME) bot/cisor_bot
+
+bot/cisor_bot: $(BONUS_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(BONUS_OBJS)
+
 clean:
 	rm -rf $(OBJ_PATH)
+	rm -rf $(BONUS_OBJ_PATH)
 
 fclean: clean
-	rm -f $(NAME)
+	rm -f $(NAME) bot/cisor_bot
 
 re: fclean all
 
-.PHONY: all clean fclean re
+.PHONY: all clean fclean re bonus

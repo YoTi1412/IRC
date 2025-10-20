@@ -28,10 +28,10 @@ void Bot::handleMultiplayerCommand(const std::string &sender, const std::vector<
             Room &old = rooms[oldRn];
             // Notify the other player (if any)
             std::string other;
-            if (old.getP1() == sender)
-                other = old.getP2();
-            else if (old.getP2() == sender)
-                other = old.getP1();
+            if (old.getPlayer1Nick() == sender)
+                other = old.getPlayer2Nick();
+            else if (old.getPlayer2Nick() == sender)
+                other = old.getPlayer1Nick();
             old.removePlayer(sender);
             playerRoom.erase(cur);
             send_privmsg(sender, "You left room '" + oldRn + "'.");
@@ -72,10 +72,10 @@ void Bot::handleMultiplayerCommand(const std::string &sender, const std::vector<
             Room &old = rooms[oldRn];
             // Notify the other player (if any)
             std::string other;
-            if (old.getP1() == sender)
-                other = old.getP2();
-            else if (old.getP2() == sender)
-                other = old.getP1();
+            if (old.getPlayer1Nick() == sender)
+                other = old.getPlayer2Nick();
+            else if (old.getPlayer2Nick() == sender)
+                other = old.getPlayer1Nick();
             old.removePlayer(sender);
             playerRoom.erase(cur);
             send_privmsg(sender, "You left room '" + oldRn + "'.");
@@ -107,13 +107,13 @@ void Bot::handleMultiplayerCommand(const std::string &sender, const std::vector<
         }
         playerRoom[sender] = rn;
         send_privmsg(sender, "Joined room '" + rn + "'. Both players DM 'play <rock|paper|cisor>' to play rounds.");
-        if (!r.getP1().empty() && r.getP1() != sender)
+        if (!r.getPlayer1Nick().empty() && r.getPlayer1Nick() != sender)
         {
-            send_privmsg(r.getP1(), sender + " joined your room '" + rn + "'");
+            send_privmsg(r.getPlayer1Nick(), sender + " joined your room '" + rn + "'");
         }
-        if (!r.getP2().empty() && r.getP2() != sender)
+        if (!r.getPlayer2Nick().empty() && r.getPlayer2Nick() != sender)
         {
-            send_privmsg(r.getP2(), sender + " joined your room '" + rn + "'");
+            send_privmsg(r.getPlayer2Nick(), sender + " joined your room '" + rn + "'");
         }
     }
     else if (sub == "leave")
@@ -130,13 +130,13 @@ void Bot::handleMultiplayerCommand(const std::string &sender, const std::vector<
         playerRoom.erase(pr);
         send_privmsg(sender, "Left room '" + rn + "'.");
         // Notify remaining player, if any
-        if (!r.getP1().empty())
+        if (!r.getPlayer1Nick().empty())
         {
-            send_privmsg(r.getP1(), "There are not enough players in the room.");
+            send_privmsg(r.getPlayer1Nick(), "There are not enough players in the room.");
         }
-        if (!r.getP2().empty())
+        if (!r.getPlayer2Nick().empty())
         {
-            send_privmsg(r.getP2(), "There are not enough players in the room.");
+            send_privmsg(r.getPlayer2Nick(), "There are not enough players in the room.");
         }
         if (r.isEmpty())
         {
@@ -158,9 +158,9 @@ void Bot::handleMultiplayerCommand(const std::string &sender, const std::vector<
             return;
         }
         std::ostringstream ss;
-        ss << "Room '" << r.getName() << "' players: [" << r.getP1() << ", " << r.getP2() << "] rounds: " << r.getPlayed()
-           << "; score: " << r.getP1() << " " << r.getW1() << "-" << r.getW2() << " " << r.getP2()
-           << "; sets: " << r.getP1() << "=" << r.getSetW1() << ", " << r.getP2() << "=" << r.getSetW2();
+    ss << "Room '" << r.getName() << "' players: [" << r.getPlayer1Nick() << ", " << r.getPlayer2Nick() << "] rounds: " << r.getRoundsPlayed()
+       << "; score: " << r.getPlayer1Nick() << " " << r.getPlayer1Wins() << "-" << r.getPlayer2Wins() << " " << r.getPlayer2Nick()
+       << "; sets: " << r.getPlayer1Nick() << "=" << r.getPlayer1SetsWon() << ", " << r.getPlayer2Nick() << "=" << r.getPlayer2SetsWon();
         send_privmsg(sender, ss.str());
     }
     else
@@ -172,13 +172,13 @@ void Bot::handleMultiplayerCommand(const std::string &sender, const std::vector<
 
 void Bot::handleMultiplayerMove(const std::string &sender, const std::string &move)
 {
-    std::map<std::string, std::string>::iterator pr = playerRoom.find(sender);
-    if (pr == playerRoom.end())
+    std::map<std::string, std::string>::iterator playerRoomIt = playerRoom.find(sender);
+    if (playerRoomIt == playerRoom.end())
     {
         send_privmsg(sender, "Join a room first: room create <name> or room join <name>");
         return;
     }
-    Room &r = rooms[pr->second];
+    Room &r = rooms[playerRoomIt->second];
     if (!r.isReady())
     {
         send_privmsg(sender, "There are not enough players in the room.");
@@ -190,7 +190,7 @@ void Bot::handleMultiplayerMove(const std::string &sender, const std::string &mo
         return;
     }
     std::string norm = (move == "scissors") ? "cisor" : move;
-    r.setChoice(sender, norm);
+    r.setPlayerChoice(sender, norm);
     send_privmsg(sender, "Move received. Waiting for the opponent...");
     if (r.bothChose())
     {
@@ -198,50 +198,50 @@ void Bot::handleMultiplayerMove(const std::string &sender, const std::string &mo
     }
 }
 
-void Bot::notifyRoomBothChose(Room &r)
+void Bot::notifyRoomBothChose(Room &room)
 {
-    if (!r.isReady())
+    if (!room.isReady())
     {
         // A player left or switched rooms; do not proceed.
         return;
     }
-    int outcome = compare_rps(r.getC1(), r.getC2());
-    r.applyOutcome(outcome);
+    int outcome = compare_rps(room.getPlayer1Choice(), room.getPlayer2Choice());
+    room.applyOutcome(outcome);
     std::string msg;
     if (outcome > 0)
-        msg = r.getP1() + " wins this round";
+    msg = room.getPlayer1Nick() + " wins this round";
     else if (outcome < 0)
-        msg = r.getP2() + " wins this round";
+    msg = room.getPlayer2Nick() + " wins this round";
     else
         msg = "Round is a tie";
     std::ostringstream round;
-    round << "Choices: " << r.getP1() << "=" << r.getC1() << ", " << r.getP2() << "=" << r.getC2() << "; " << msg << ". (" << r.getPlayed() << "/5)";
-    if (!r.getP1().empty())
-        send_privmsg(r.getP1(), round.str());
-    if (!r.getP2().empty())
-        send_privmsg(r.getP2(), round.str());
-    r.clearChoices();
+    round << "Choices: " << room.getPlayer1Nick() << "=" << room.getPlayer1Choice() << ", " << room.getPlayer2Nick() << "=" << room.getPlayer2Choice() << "; " << msg << ". (" << room.getRoundsPlayed() << "/5)";
+    if (!room.getPlayer1Nick().empty())
+        send_privmsg(room.getPlayer1Nick(), round.str());
+    if (!room.getPlayer2Nick().empty())
+        send_privmsg(room.getPlayer2Nick(), round.str());
+    room.clearChoices();
 
-    if (r.isOver())
+    if (room.isOver())
     {
         // Determine set winner, increment set counters, announce, then reset rounds (keep room open)
-        if (r.getW1() > r.getW2())
+        if (room.getPlayer1Wins() > room.getPlayer2Wins())
         {
-            r.addSetW1();
+            room.addPlayer1SetWin();
         }
-        else if (r.getW2() > r.getW1())
+        else if (room.getPlayer2Wins() > room.getPlayer1Wins())
         {
-            r.addSetW2();
+            room.addPlayer2SetWin();
         }
         std::ostringstream fin;
-        fin << "Set finished. Round score: " << r.getP1() << " " << r.getW1() << " - " << r.getW2() << " " << r.getP2() << 
-               ", ties=" << r.getTies() << "; Sets: " << r.getP1() << "=" << r.getSetW1() << ", " << r.getP2() << "=" << r.getSetW2();
-        if (!r.getP1().empty())
-            send_privmsg(r.getP1(), fin.str());
-        if (!r.getP2().empty())
-            send_privmsg(r.getP2(), fin.str());
+        fin << "Set finished. Round score: " << room.getPlayer1Nick() << " " << room.getPlayer1Wins() << " - " << room.getPlayer2Wins() << " " << room.getPlayer2Nick() << 
+               ", ties=" << room.getRoundTies() << "; Sets: " << room.getPlayer1Nick() << "=" << room.getPlayer1SetsWon() << ", " << room.getPlayer2Nick() << "=" << room.getPlayer2SetsWon();
+        if (!room.getPlayer1Nick().empty())
+            send_privmsg(room.getPlayer1Nick(), fin.str());
+        if (!room.getPlayer2Nick().empty())
+            send_privmsg(room.getPlayer2Nick(), fin.str());
         // Reset per-set counters for next set
-        r.resetRoundCounters();
+        room.resetRoundCounters();
     }
 }
 
@@ -262,19 +262,19 @@ void Bot::send_room_scoreboard(const std::string &sender)
     }
 
     // Gather both players' stats (no structs; plain variables)
-    std::string p1n = r.getP1();
-    int p1w = r.getW1();
-    int p1l = r.getW2();
-    int p1t = r.getTies();
-    int p1g = r.getPlayed();
-    int p1s = r.getSetW1();
+    std::string p1n = r.getPlayer1Nick();
+    int p1w = r.getPlayer1Wins();
+    int p1l = r.getPlayer2Wins();
+    int p1t = r.getRoundTies();
+    int p1g = r.getRoundsPlayed();
+    int p1s = r.getPlayer1SetsWon();
 
-    std::string p2n = r.getP2();
-    int p2w = r.getW2();
-    int p2l = r.getW1();
-    int p2t = r.getTies();
-    int p2g = r.getPlayed();
-    int p2s = r.getSetW2();
+    std::string p2n = r.getPlayer2Nick();
+    int p2w = r.getPlayer2Wins();
+    int p2l = r.getPlayer1Wins();
+    int p2t = r.getRoundTies();
+    int p2g = r.getRoundsPlayed();
+    int p2s = r.getPlayer2SetsWon();
 
     // Determine rank: set wins desc, then wins desc, ties desc, name asc
     bool firstIsP1 = true;
@@ -326,9 +326,9 @@ void Bot::send_room_scoreboard(const std::string &sender)
     {
         if (!ln.empty() && ln[ln.size()-1] == '\r')
             ln.erase(ln.size()-1);
-        if (!r.getP1().empty())
-            send_privmsg(r.getP1(), ln);
-        if (!r.getP2().empty() && r.getP2() != r.getP1())
-            send_privmsg(r.getP2(), ln);
+        if (!r.getPlayer1Nick().empty())
+            send_privmsg(r.getPlayer1Nick(), ln);
+        if (!r.getPlayer2Nick().empty() && r.getPlayer2Nick() != r.getPlayer1Nick())
+            send_privmsg(r.getPlayer2Nick(), ln);
     }
 }

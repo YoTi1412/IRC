@@ -55,7 +55,7 @@ bool Room::isReady() const
     return !player1Nick.empty() && !player2Nick.empty();
 }
 
-bool Room::setChoice(const std::string &nick, const std::string &choice)
+bool Room::setPlayerChoice(const std::string &nick, const std::string &choice)
 {
     if (nick == player1Nick)
     {
@@ -81,35 +81,35 @@ void Room::clearChoices()
     player2Choice.clear();
 }
 
-int Room::getPlayed() const
+int Room::getRoundsPlayed() const
 {
     return roundsPlayed;
 }
-int Room::getW1() const
+int Room::getPlayer1Wins() const
 {
     return player1Wins;
 }
-int Room::getW2() const
+int Room::getPlayer2Wins() const
 {
     return player2Wins;
 }
-int Room::getTies() const
+int Room::getRoundTies() const
 {
     return roundTies;
 }
-const std::string &Room::getP1() const
+const std::string &Room::getPlayer1Nick() const
 {
     return player1Nick;
 }
-const std::string &Room::getP2() const
+const std::string &Room::getPlayer2Nick() const
 {
     return player2Nick;
 }
-const std::string &Room::getC1() const
+const std::string &Room::getPlayer1Choice() const
 {
     return player1Choice;
 }
-const std::string &Room::getC2() const
+const std::string &Room::getPlayer2Choice() const
 {
     return player2Choice;
 }
@@ -130,22 +130,22 @@ bool Room::isOver() const
     return roundsPlayed >= 5;
 }
 
-int Room::getSetW1() const
+int Room::getPlayer1SetsWon() const
 {
     return setsWonP1;
 }
 
-int Room::getSetW2() const
+int Room::getPlayer2SetsWon() const
 {
     return setsWonP2;
 }
 
-void Room::addSetW1()
+void Room::addPlayer1SetWin()
 {
     ++setsWonP1;
 }
 
-void Room::addSetW2()
+void Room::addPlayer2SetWin()
 {
     ++setsWonP2;
 }

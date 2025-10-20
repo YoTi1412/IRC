@@ -6,16 +6,16 @@
 class Room {
 private:
     std::string name;
-    std::string p1;
-    std::string p2;
-    std::string c1;
-    std::string c2;
-    int w1;
-    int w2;
-    int ties;
-    int played;
-    int setW1;
-    int setW2;
+    std::string player1Nick;
+    std::string player2Nick;
+    std::string player1Choice;
+    std::string player2Choice;
+    int player1Wins;
+    int player2Wins;
+    int roundTies;
+    int roundsPlayed;
+    int setsWonP1;
+    int setsWonP2;
 public:
     Room();
     Room(const std::string &name);

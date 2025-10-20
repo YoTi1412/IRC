@@ -42,11 +42,13 @@ void Room::removePlayer(const std::string &nick)
 {
     if (nick == player1Nick)
     {
-        player1Nick.clear(); player1Choice.clear();
+        player1Nick.clear();
+        player1Choice.clear();
     }
     if (nick == player2Nick)
     {
-        player2Nick.clear(); player2Choice.clear();
+        player2Nick.clear();
+        player2Choice.clear();
     }
 }
 

@@ -9,10 +9,10 @@
 
 std::string Bot::choose_rps()
 {
-    int v = std::rand() % 3;
-    if (v == 0)
+    int randomIndex = std::rand() % 3;
+    if (randomIndex == 0)
         return "rock";
-    if (v == 1)
+    if (randomIndex == 1)
         return "paper";
     return "cisor";
 }
@@ -25,24 +25,24 @@ std::string Bot::choose_rps()
 
 void Bot::send_scoreboard(const std::string &player)
 {
-    PlayerStats &st = stats[player];
-    std::ostringstream oss;
-    oss << "+----------------------+-----+-----+-----+------+-----+\r\n";
-    oss << "| Player               |  W  |  L  |  T  | Sets |BotS |\r\n";
-    oss << "+----------------------+-----+-----+-----+------+-----+\r\n";
-    std::ostringstream namecol;
-    namecol << std::left << std::setw(20) << player;
-    oss << "| " << namecol.str() << " | "
-        << std::setw(3) << st.getWins() << " | "
-        << std::setw(3) << st.getLosses() << " | "
-        << std::setw(3) << st.getTies() << " | "
-        << std::setw(4) << st.getSetsWon() << " | "
-        << std::setw(3) << st.getBotSetsWon() << " |\r\n";
-    oss << "+----------------------+-----+-----+-----+------+-----+\r\n";
+    PlayerStats &playerStats = stats[player];
+    std::ostringstream scoreboard;
+    scoreboard << "+----------------------+-----+-----+-----+------+-----+\r\n";
+    scoreboard << "| Player               |  W  |  L  |  T  | Sets |BotS |\r\n";
+    scoreboard << "+----------------------+-----+-----+-----+------+-----+\r\n";
+    std::ostringstream nameColumn;
+    nameColumn << std::left << std::setw(20) << player;
+    scoreboard << "| " << nameColumn.str() << " | "
+        << std::setw(3) << playerStats.getWins() << " | "
+        << std::setw(3) << playerStats.getLosses() << " | "
+        << std::setw(3) << playerStats.getTies() << " | "
+        << std::setw(4) << playerStats.getSetsWon() << " | "
+        << std::setw(3) << playerStats.getBotSetsWon() << " |\r\n";
+    scoreboard << "+----------------------+-----+-----+-----+------+-----+\r\n";
 
-    std::istringstream lines(oss.str());
+    std::istringstream scoreboardLines(scoreboard.str());
     std::string line;
-    while (std::getline(lines, line))
+    while (std::getline(scoreboardLines, line))
     {
         if (!line.empty() && line[line.size()-1] == '\r')
             line.erase(line.size()-1);
@@ -54,46 +54,46 @@ void Bot::send_scoreboard(const std::string &player)
 
 bool Bot::parsePlayerMove(const std::string &message, std::string &playerTok) const
 {
-    std::istringstream iss(message);
-    std::vector<std::string> tokens;
-    std::string tok;
-    while (iss >> tok)
+    std::istringstream inputStream(message);
+    std::vector<std::string> words;
+    std::string token;
+    while (inputStream >> token)
     {
-        tokens.push_back(tok);
+        words.push_back(token);
     }
-    if (tokens.empty())
+    if (words.empty())
     {
         playerTok.clear();
         return false;
     }
 
-    if (tokens[0] == "cisor")
+    if (words[0] == "cisor")
     {
-        if (tokens.size() < 2)
+        if (words.size() < 2)
         {
             playerTok.clear();
             return false;
         }
-        std::string cand = tokens[1];
-        if (!isValidMoveToken(cand))
+        std::string candidate = words[1];
+        if (!isValidMoveToken(candidate))
         {
             playerTok.clear();
             return false;
         }
-        if (cand == "scissors")
-            cand = "cisor";
-        playerTok = cand;
+        if (candidate == "scissors")
+            candidate = "cisor";
+        playerTok = candidate;
         return true;
     }
 
-    for (size_t i = 0; i < tokens.size(); ++i)
+    for (size_t index = 0; index < words.size(); ++index)
     {
-        std::string cand = tokens[i];
-        if (isValidMoveToken(cand))
+        std::string candidate = words[index];
+        if (isValidMoveToken(candidate))
         {
-            if (cand == "scissors")
-                cand = "cisor";
-            playerTok = cand;
+            if (candidate == "scissors")
+                candidate = "cisor";
+            playerTok = candidate;
             return true;
         }
     }
@@ -101,41 +101,42 @@ bool Bot::parsePlayerMove(const std::string &message, std::string &playerTok) co
     return false;
 }
 
-void Bot::handleScoreRequest(const std::string &sender)
+void Bot::handleScoreRequest(const std::string &player)
 {
-    send_scoreboard(sender);
+    send_scoreboard(player);
 }
 
 void Bot::handleMoveRound(const std::string &sender, const std::string &playerTok)
 {
-    std::string botTok = choose_rps();
-    int outcome = compare_rps(playerTok, botTok);
+    std::string botMove = choose_rps();
+    int outcome = compare_rps(playerTok, botMove);
 
-    PlayerStats &st = stats[sender];
+    PlayerStats &playerStats = stats[sender];
     if (outcome == 1)
-        st.addWin();
+        playerStats.addWin();
     else if (outcome == -1)
-        st.addLoss(); else st.addTie();
-    st.incrementPlayed();
+        playerStats.addLoss();
+    else playerStats.addTie();
+    playerStats.incrementPlayed();
 
-    std::ostringstream res;
-    res << "I choose " << botTok << "; you played " << playerTok;
+    std::ostringstream resultMessage;
+    resultMessage << "I choose " << botMove << "; you played " << playerTok;
     if (outcome == 1)
-        res << " -- you win";
+        resultMessage << " -- you win";
     else if (outcome == -1)
-        res << " -- you lose";
+        resultMessage << " -- you lose";
     else
-        res << " -- tie";
-    send_privmsg(sender, res.str());
+        resultMessage << " -- tie";
+    send_privmsg(sender, resultMessage.str());
 
-    if (st.getPlayed() >= 5)
+    if (playerStats.getPlayed() >= 5)
     {
-        if (st.getWins() > st.getLosses())
-            st.addSetWon();
-        else if (st.getLosses() > st.getWins())
-            st.addBotSetWon();
+        if (playerStats.getWins() > playerStats.getLosses())
+            playerStats.addSetWon();
+        else if (playerStats.getLosses() > playerStats.getWins())
+            playerStats.addBotSetWon();
         send_scoreboard(sender);
-        st.resetSetCounters();
+        playerStats.resetSetCounters();
     }
 }
 

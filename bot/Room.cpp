@@ -10,6 +10,11 @@ Room::Room(const std::string &nm) : name(nm), player1Wins(0), player2Wins(0), ro
 
 }
 
+Room::~Room()
+{
+    // trivial destructor
+}
+
 const std::string &Room::getName() const
 {
     return name;

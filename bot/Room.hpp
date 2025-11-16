@@ -18,6 +18,7 @@ private:
     int setsWonP2;
 public:
     Room();
+    ~Room();
     Room(const std::string &name);
     const std::string &getName() const;
     bool isEmpty() const;

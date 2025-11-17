@@ -1,4 +1,4 @@
-#include "Bot.hpp"
+#include "../includes/Bot.hpp"
 
 std::string toLowerStr(const std::string &s)
 {

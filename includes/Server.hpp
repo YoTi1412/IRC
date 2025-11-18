@@ -29,7 +29,6 @@ private:
     // Helper methods for setup
     void createSocket();
     void configureServerAddress();
-    void setSocketTimeout();
     void bindSocket();
     void listenOnSocket();
     void initEpoll();

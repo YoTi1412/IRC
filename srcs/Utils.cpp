@@ -35,13 +35,14 @@ bool Utils::isValidPort(const char* portStr) {
 
     long portNum = std::strtol(portStr, NULL, 10);
 
-    if (portNum < 1024 || portNum > 65535)
+    if (portNum < MIN_PORT || portNum > MAX_PORT)
         return false;
     return true;
 }
 
 bool Utils::isValidPassword(const std::string& password) {
-    if (password.empty()) return false;
+    if (password.empty())
+        return false;
     for (size_t i = 0; i < password.size(); i++) {
         unsigned char c = static_cast<unsigned char>(password[i]);
         if (!std::isprint(c) || std::isspace(c)) {
@@ -50,8 +51,6 @@ bool Utils::isValidPassword(const std::string& password) {
     }
     return true;
 }
-
-
 
 void Utils::setupSignalHandler() {
     signal(SIGINT, Server::sigHandler);
@@ -65,13 +64,8 @@ std::string Utils::intToString(int value) {
     return ss.str();
 }
 
-int Utils::setnonblocking(int client_fd) {
-    int flags = fcntl(client_fd, F_GETFL, 0);
-    if (flags < 0)
-        return -1;
-    if (fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) < 0)
-        return -1;
-    return 0;
+int Utils::setnonblocking(int fd) {
+    return fcntl(fd, F_SETFL, O_NONBLOCK);
 }
 
 std::list<std::string> Utils::splitCommand(const std::string& buffer) {

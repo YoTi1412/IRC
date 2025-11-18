@@ -1,4 +1,4 @@
-#include "Room.hpp"
+#include "../includes/Room.hpp"
 
 Room::Room() : player1Wins(0), player2Wins(0), roundTies(0), roundsPlayed(0), setsWonP1(0), setsWonP2(0)
 {
@@ -8,6 +8,11 @@ Room::Room() : player1Wins(0), player2Wins(0), roundTies(0), roundsPlayed(0), se
 Room::Room(const std::string &nm) : name(nm), player1Wins(0), player2Wins(0), roundTies(0), roundsPlayed(0), setsWonP1(0), setsWonP2(0)
 {
 
+}
+
+Room::~Room()
+{
+    // trivial destructor
 }
 
 const std::string &Room::getName() const

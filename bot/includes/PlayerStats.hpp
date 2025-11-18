@@ -13,6 +13,7 @@ private:
     int bot_sets_won;
 public:
     PlayerStats();
+    ~PlayerStats();
     void addWin();
     void addLoss();
     void addTie();

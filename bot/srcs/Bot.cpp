@@ -1,4 +1,4 @@
-#include "Bot.hpp"
+#include "../includes/Bot.hpp"
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
@@ -170,6 +170,14 @@ void Bot::mainLoop()
             trim_crlf(line);
             if (line.empty())
                 continue;
+            
+            // Check for password incorrect error
+            if (line.find("Password incorrect") != std::string::npos)
+            {
+                std::cerr << "Authentication failed: Password incorrect" << std::endl;
+                return;
+            }
+            
             handleLine(line);
         }
     }
@@ -213,6 +221,9 @@ int Bot::run()
         return 1;
     std::signal(SIGPIPE, SIG_IGN);
     auth(password);
+    
+    displayBanner();
+    
     mainLoop();
     
     return 0;

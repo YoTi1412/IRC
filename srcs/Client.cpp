@@ -97,9 +97,7 @@ void Client::handleSendResult(ssize_t bytesSent, const std::string& formattedRep
         }
         else
         {
-            std::invalid_argument e(LOG_SEND_FAILED(fd, strerror(errno)));
-            Logger::error(e);
-            throw e;
+            throw std::invalid_argument(LOG_SEND_FAILED(fd, strerror(errno)));
         }
         return;
     }

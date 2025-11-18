@@ -1,5 +1,5 @@
 NAME        = ircserv
-CC          = clang++
+CC          = c++
 CFLAGS      = -Wall -Werror -Wextra -std=c++98 -g -fsanitize=address
 
 HEADERS     = $(addprefix $(INC_PATH), Channel.hpp Client.hpp Command.hpp Includes.hpp Logger.hpp Message.hpp Replies.hpp Server.hpp Utils.hpp)
@@ -34,14 +34,14 @@ OBJ_PATH    = objs/
 OBJS        = $(addprefix $(OBJ_PATH), $(SRCS:.cpp=.o))
 
 BONUS_PATH      = bot/
-BONUS_OBJ_PATH  = bot/objects/
-BONUS_SRCS      = main.cpp \
-                  Bot.cpp \
-                  PlayerStats.cpp \
-                  Room.cpp \
-                  handleGameCore.cpp \
-                  handleMultiplayer.cpp \
-                  utils.cpp
+BONUS_OBJ_PATH  = bot/objs/
+BONUS_SRCS      = srcs/main.cpp \
+                  srcs/Bot.cpp \
+                  srcs/PlayerStats.cpp \
+                  srcs/Room.cpp \
+                  srcs/handleGameCore.cpp \
+                  srcs/handleMultiplayer.cpp \
+                  srcs/utils.cpp
 BONUS_OBJS      = $(addprefix $(BONUS_OBJ_PATH), $(BONUS_SRCS:.cpp=.o))
 
 INCLUDES    = -I $(INC_PATH)

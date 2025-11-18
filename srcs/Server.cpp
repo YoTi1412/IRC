@@ -25,31 +25,22 @@ void Server::validateArgs(const std::string &portStr,
   validatePassword(password);
 }
 
-void Server::checkEmptyArgs(const std::string &portStr,
-                            const std::string &password) {
-  if (portStr.empty() || password.empty()) {
-    std::invalid_argument e("Arguments are empty!");
-    Logger::error(e);
-    throw e;
-  }
+void Server::checkEmptyArgs(const std::string &portStr, const std::string &password) {
+    if (portStr.empty() || password.empty()) {
+        throw std::invalid_argument("Arguments are empty!");
+    }
 }
 
 void Server::validatePort(const std::string &portStr) {
-  if (!Utils::isValidPort(portStr.c_str())) {
-    std::invalid_argument e(
-        "Invalid port number. Must be between 1024 and 65535.");
-    Logger::error(e);
-    throw e;
-  }
+    if (!Utils::isValidPort(portStr.c_str())) {
+        throw std::invalid_argument("Invalid port number. Must be between 1024 and 65535.");
+    }
 }
 
 void Server::validatePassword(const std::string &password) {
-  if (!Utils::isValidPassword(password)) {
-    std::invalid_argument e(
-        "Invalid password. No spaces or non-printable characters allowed.");
-    Logger::error(e);
-    throw e;
-  }
+    if (!Utils::isValidPassword(password)) {
+        throw std::invalid_argument("Invalid password. No spaces or non-printable characters allowed.");
+    }
 }
 
 Server::~Server() {
@@ -160,77 +151,67 @@ void Server::increaseFdLimit() {
 }
 
 void Server::createSocket() {
-  sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sock_fd < 0) {
-    std::runtime_error e("Failed to create socket: " +
-                         std::string(strerror(errno)));
-    Logger::error(e);
-    throw e;
-  }
-  Logger::info("Socket created successfully.");
+    sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock_fd < 0) {
+        throw std::runtime_error("Failed to create socket: " + std::string(strerror(errno)));
+    }
+    Logger::info("Socket created successfully.");
 }
 
 void Server::configureServerAddress() {
-  std::memset(&serverAddress, 0, sizeof(serverAddress));
-  serverAddress.sin_family = AF_INET;
-  serverAddress.sin_addr.s_addr = INADDR_ANY;
-  serverAddress.sin_port = htons(port);
-  Logger::debug("Server address configured for port " +
-                Utils::intToString(port));
+    std::memset(&serverAddress, 0, sizeof(serverAddress));
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_addr.s_addr = INADDR_ANY;
+    serverAddress.sin_port = htons(port);
+    Logger::debug("Server address configured for port " + Utils::intToString(port));
+}
+
+void Server::setSocketTimeout() {
+    struct timeval tv;
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+    if (setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) < 0) {
+        throw std::runtime_error("Failed to set socket timeout: " + std::string(strerror(errno)));
+    }
+    Logger::debug("Socket timeout set to 5 seconds.");
 }
 
 void Server::setReuseAddr() {
-  int optval = 1;
-  if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) <
-      0) {
-    std::runtime_error e("Failed to set SO_REUSEADDR: " +
-                         std::string(strerror(errno)));
-    Logger::error(e);
-    throw e;
-  }
-  Logger::debug("SO_REUSEADDR option enabled on socket.");
+    int optval = 1;
+    if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
+        throw std::runtime_error("Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
+    }
+    Logger::debug("SO_REUSEADDR option enabled on socket.");
 }
 
 void Server::bindSocket() {
-  if (bind(sock_fd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) <
-      0) {
-    std::runtime_error e("Failed to bind socket: " +
-                         std::string(strerror(errno)));
-    Logger::error(e);
-    throw e;
-  }
-  Logger::info("Socket bound successfully.");
+    if (bind(sock_fd, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
+        throw std::runtime_error("Failed to bind socket: " + std::string(strerror(errno)));
+    }
+    Logger::info("Socket bound successfully.");
 }
 
 void Server::listenOnSocket() {
-  if (listen(sock_fd, SOMAXCONN) < 0) {
-    std::runtime_error e("Failed to listen on socket: " +
-                         std::string(strerror(errno)));
-    Logger::error(e);
-    throw e;
-  }
-  Logger::info("Server listening on socket with maximum connections.");
+    if (listen(sock_fd, SOMAXCONN) < 0) {
+        throw std::runtime_error("Failed to listen on socket: " + std::string(strerror(errno)));
+    }
+    Logger::info("Server listening on socket with maximum connections.");
 }
 
 void Server::initEpoll() {
-  epfd = epoll_create1(EPOLL_CLOEXEC);
-  if (epfd < 0) {
-    std::runtime_error e("Failed to create epoll instance: " +
-                         std::string(strerror(errno)));
-    Logger::error(e);
-    throw e;
-  }
+    epfd = epoll_create1(EPOLL_CLOEXEC);
+    if (epfd < 0) {
+        throw std::runtime_error("Failed to create epoll instance: " + std::string(strerror(errno)));
+    }
 
-  struct epoll_event ev;
-  ev.events = EPOLLIN;
-  ev.data.fd = sock_fd;
-  if (epoll_ctl(epfd, EPOLL_CTL_ADD, sock_fd, &ev) < 0) {
-    std::runtime_error e("Failed to add socket to epoll: " +
-                         std::string(strerror(errno)));
-    Logger::error(e);
-    throw e;
-  }
-  Logger::debug("Epoll instance created and socket added successfully.");
+    struct epoll_event ev;
+    ev.events = EPOLLIN;
+    ev.data.fd = sock_fd;
+    if (epoll_ctl(epfd, EPOLL_CTL_ADD, sock_fd, &ev) < 0) {
+        throw std::runtime_error("Failed to add socket to epoll: " + std::string(strerror(errno)));
+    }
+    Logger::debug("Epoll instance created and socket added successfully.");
+>>>>>>> main
 }
 
 void Server::logInitialization() {
@@ -252,17 +233,14 @@ void Server::serverRun() {
   Logger::info("Server run loop terminated due to signal.");
 }
 
-void Server::waitForEvents(struct epoll_event events[], int &nfds) {
-  nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
-  if (nfds < 0 && errno != EINTR) {
-    std::runtime_error e("Epoll wait failed: " + std::string(strerror(errno)));
-    Logger::error(e);
-    throw e;
-  }
-  if (nfds >= 0) {
-    Logger::debug("Epoll wait returned " + Utils::intToString(nfds) +
-                  " ready file descriptors.");
-  }
+void Server::waitForEvents(struct epoll_event events[], int& nfds) {
+    nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
+    if (nfds < 0 && errno != EINTR) {
+        throw std::runtime_error("Epoll wait failed: " + std::string(strerror(errno)));
+    }
+    if (nfds >= 0) {
+        Logger::debug("Epoll wait returned " + Utils::intToString(nfds) + " ready file descriptors.");
+    }
 }
 
 void Server::processEvents(struct epoll_event events[], int nfds) {

@@ -68,6 +68,7 @@ std::string toLowerStr(const std::string &s);
 std::string trimTrailingPunct(const std::string &s);
 bool isValidMoveToken(const std::string &t);
 void trim_crlf(std::string &s);
+void displayBanner();
 
 
 

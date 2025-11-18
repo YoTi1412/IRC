@@ -166,16 +166,6 @@ void Server::configureServerAddress() {
     Logger::debug("Server address configured for port " + Utils::intToString(port));
 }
 
-void Server::setSocketTimeout() {
-    struct timeval tv;
-    tv.tv_sec = 5;
-    tv.tv_usec = 0;
-    if (setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) < 0) {
-        throw std::runtime_error("Failed to set socket timeout: " + std::string(strerror(errno)));
-    }
-    Logger::debug("Socket timeout set to 5 seconds.");
-}
-
 void Server::setReuseAddr() {
     int optval = 1;
     if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
@@ -211,7 +201,6 @@ void Server::initEpoll() {
         throw std::runtime_error("Failed to add socket to epoll: " + std::string(strerror(errno)));
     }
     Logger::debug("Epoll instance created and socket added successfully.");
->>>>>>> main
 }
 
 void Server::logInitialization() {

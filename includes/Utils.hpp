@@ -1,6 +1,9 @@
 #pragma once
 #include "Includes.hpp"
 
+#define MIN_PORT 1024
+#define MAX_PORT 65535
+
 class Utils {
 private:
     Utils();

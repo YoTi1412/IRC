@@ -1,6 +1,9 @@
 NAME        = ircserv
-CC          = c++
+CC          = clang++
 CFLAGS      = -Wall -Werror -Wextra -std=c++98 -g -fsanitize=address
+
+HEADERS     = $(addprefix $(INC_PATH), Channel.hpp Client.hpp Command.hpp Includes.hpp Logger.hpp Message.hpp Replies.hpp Server.hpp Utils.hpp)
+BONUS_HEADERS = $(addprefix $(BONUS_PATH), Bot.hpp PlayerStats.hpp Room.hpp)
 
 SRCS_PATH   = srcs/
 CMD_PATH    = srcs/commands/
@@ -48,13 +51,13 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $(OBJS)
 
-$(OBJ_PATH)%.o: $(SRCS_PATH)%.cpp
+$(OBJ_PATH)%.o: $(SRCS_PATH)%.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-$(BONUS_OBJ_PATH)%.o: $(BONUS_PATH)%.cpp
+$(BONUS_OBJ_PATH)%.o: $(BONUS_PATH)%.cpp $(BONUS_HEADERS)
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 bonus: $(NAME) bot/cisor_bot
 

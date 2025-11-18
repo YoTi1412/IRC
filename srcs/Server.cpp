@@ -25,25 +25,19 @@ void Server::validateArgs(const std::string &portStr, const std::string &passwor
 
 void Server::checkEmptyArgs(const std::string &portStr, const std::string &password) {
     if (portStr.empty() || password.empty()) {
-        std::invalid_argument e("Arguments are empty!");
-        Logger::error(e);
-        throw e;
+        throw std::invalid_argument("Arguments are empty!");
     }
 }
 
 void Server::validatePort(const std::string &portStr) {
     if (!Utils::isValidPort(portStr.c_str())) {
-        std::invalid_argument e("Invalid port number. Must be between 1024 and 65535.");
-        Logger::error(e);
-        throw e;
+        throw std::invalid_argument("Invalid port number. Must be between 1024 and 65535.");
     }
 }
 
 void Server::validatePassword(const std::string &password) {
     if (!Utils::isValidPassword(password)) {
-        std::invalid_argument e("Invalid password. No spaces or non-printable characters allowed.");
-        Logger::error(e);
-        throw e;
+        throw std::invalid_argument("Invalid password. No spaces or non-printable characters allowed.");
     }
 }
 
@@ -155,9 +149,7 @@ void Server::increaseFdLimit() {
 void Server::createSocket() {
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (sock_fd < 0) {
-        std::runtime_error e("Failed to create socket: " + std::string(strerror(errno)));
-        Logger::error(e);
-        throw e;
+        throw std::runtime_error("Failed to create socket: " + std::string(strerror(errno)));
     }
     Logger::info("Socket created successfully.");
 }
@@ -175,9 +167,7 @@ void Server::setSocketTimeout() {
     tv.tv_sec = 5;
     tv.tv_usec = 0;
     if (setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) < 0) {
-        std::runtime_error e("Failed to set socket timeout: " + std::string(strerror(errno)));
-        Logger::error(e);
-        throw e;
+        throw std::runtime_error("Failed to set socket timeout: " + std::string(strerror(errno)));
     }
     Logger::debug("Socket timeout set to 5 seconds.");
 }
@@ -185,27 +175,21 @@ void Server::setSocketTimeout() {
 void Server::setReuseAddr() {
     int optval = 1;
     if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
-        std::runtime_error e("Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
-        Logger::error(e);
-        throw e;
+        throw std::runtime_error("Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
     }
     Logger::debug("SO_REUSEADDR option enabled on socket.");
 }
 
 void Server::bindSocket() {
     if (bind(sock_fd, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) {
-        std::runtime_error e("Failed to bind socket: " + std::string(strerror(errno)));
-        Logger::error(e);
-        throw e;
+        throw std::runtime_error("Failed to bind socket: " + std::string(strerror(errno)));
     }
     Logger::info("Socket bound successfully.");
 }
 
 void Server::listenOnSocket() {
     if (listen(sock_fd, SOMAXCONN) < 0) {
-        std::runtime_error e("Failed to listen on socket: " + std::string(strerror(errno)));
-        Logger::error(e);
-        throw e;
+        throw std::runtime_error("Failed to listen on socket: " + std::string(strerror(errno)));
     }
     Logger::info("Server listening on socket with maximum connections.");
 }
@@ -213,18 +197,14 @@ void Server::listenOnSocket() {
 void Server::initEpoll() {
     epfd = epoll_create1(EPOLL_CLOEXEC);
     if (epfd < 0) {
-        std::runtime_error e("Failed to create epoll instance: " + std::string(strerror(errno)));
-        Logger::error(e);
-        throw e;
+        throw std::runtime_error("Failed to create epoll instance: " + std::string(strerror(errno)));
     }
 
     struct epoll_event ev;
     ev.events = EPOLLIN;
     ev.data.fd = sock_fd;
     if (epoll_ctl(epfd, EPOLL_CTL_ADD, sock_fd, &ev) < 0) {
-        std::runtime_error e("Failed to add socket to epoll: " + std::string(strerror(errno)));
-        Logger::error(e);
-        throw e;
+        throw std::runtime_error("Failed to add socket to epoll: " + std::string(strerror(errno)));
     }
     Logger::debug("Epoll instance created and socket added successfully.");
 }
@@ -251,9 +231,7 @@ void Server::serverRun() {
 void Server::waitForEvents(struct epoll_event events[], int& nfds) {
     nfds = epoll_wait(epfd, events, MAX_EVENTS, -1);
     if (nfds < 0 && errno != EINTR) {
-        std::runtime_error e("Epoll wait failed: " + std::string(strerror(errno)));
-        Logger::error(e);
-        throw e;
+        throw std::runtime_error("Epoll wait failed: " + std::string(strerror(errno)));
     }
     if (nfds >= 0) {
         Logger::debug("Epoll wait returned " + Utils::intToString(nfds) + " ready file descriptors.");

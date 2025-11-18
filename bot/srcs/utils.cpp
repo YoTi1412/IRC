@@ -1,4 +1,5 @@
 #include "../includes/Bot.hpp"
+#include <iostream>
 
 std::string toLowerStr(const std::string &s)
 {
@@ -39,4 +40,23 @@ void trim_crlf(std::string &s)
         else
             break;
     }
+}
+
+void displayBanner() {
+    std::cout << "\n";
+    std::cout << "  ╔═══════════════════════════════════════════════════════════╗\n";
+    std::cout << "  ║                                                           ║\n";
+    std::cout << "  ║     ██╗██████╗  ██████╗    ██████╗  ██████╗ ████████╗    ║\n";
+    std::cout << "  ║     ██║██╔══██╗██╔════╝    ██╔══██╗██╔═══██╗╚══██╔══╝    ║\n";
+    std::cout << "  ║     ██║██████╔╝██║         ██████╔╝██║   ██║   ██║       ║\n";
+    std::cout << "  ║     ██║██╔══██╗██║         ██╔══██╗██║   ██║   ██║       ║\n";
+    std::cout << "  ║     ██║██║  ██║╚██████╗    ██████╔╝╚██████╔╝   ██║       ║\n";
+    std::cout << "  ║     ╚═╝╚═╝  ╚═╝ ╚═════╝    ╚═════╝  ╚═════╝    ╚═╝       ║\n";
+    std::cout << "  ║                                                           ║\n";
+    std::cout << "  ║            Internet Relay Chat Bot v1.0                   ║\n";
+    std::cout << "  ║                                                           ║\n";
+    std::cout << "  ║              Created by mkobaa & yrafai                   ║\n";
+    std::cout << "  ║                                                           ║\n";
+    std::cout << "  ╚═══════════════════════════════════════════════════════════╝\n";
+    std::cout << "\n";
 }

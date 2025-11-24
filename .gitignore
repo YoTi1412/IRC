@@ -1,5 +1,6 @@
 .vscode
 test_irc.txt
 compile_commands.json
+compile_flags.txt
 .cache/
 irc.pdf

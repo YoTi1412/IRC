@@ -171,7 +171,6 @@ void Bot::mainLoop()
             if (line.empty())
                 continue;
             
-            // Check for password incorrect error
             if (line.find("Password incorrect") != std::string::npos)
             {
                 std::cerr << "Authentication failed: Password incorrect" << std::endl;

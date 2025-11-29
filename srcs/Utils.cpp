@@ -2,21 +2,16 @@
 #include <iostream>
 
 void Utils::displayBanner() {
-    std::cout << "\n";
-    std::cout << "  ╔════════════════════════════════════════════════════════════════════════════╗\n";
-    std::cout << "  ║                                                                            ║\n";
-    std::cout << "  ║   ██╗██████╗  ██████╗   ███████╗███████╗██████╗ ██╗   ██╗███████╗██████╗   ║\n";
-    std::cout << "  ║   ██║██╔══██╗██╔════╝   ██╔════╝██╔════╝██╔══██╗██║   ██║██╔════╝██╔══██╗  ║\n";
-    std::cout << "  ║   ██║██████╔╝██║        ███████╗█████╗  ██████╔╝██║   ██║█████╗  ██████╔╝  ║\n";
-    std::cout << "  ║   ██║██╔══██╗██║        ╚════██║██╔══╝  ██╔══██╗╚██╗ ██╔╝██╔══╝  ██╔══██╗  ║\n";
-    std::cout << "  ║   ██║██║  ██║╚██████╗   ███████║███████╗██║  ██║ ╚████╔╝ ███████╗██║  ██║  ║\n";
-    std::cout << "  ║   ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚══════╝╚══════╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚═╝  ╚═╝  ║\n";
-    std::cout << "  ║                                                                            ║\n";
-    std::cout << "  ║                  Internet Relay Chat Server v1.0                           ║\n";
-    std::cout << "  ║                                                                            ║\n";
-    std::cout << "  ║                    Created by mkobaa & yrafai                              ║\n";
-    std::cout << "  ║                                                                            ║\n";
-    std::cout << "  ╚════════════════════════════════════════════════════════════════════════════╝\n";
+    std::cout << " Welcome to:                                         \n";
+    std::cout << "  _                                         \n";
+    std::cout << " (_)                                        \n";
+    std::cout << "  _ _ __ ___   ___  ___ _ ____   _____ _ __ \n";
+    std::cout << " | | '__/ __| / __|/ _ \\ '__\\ \\ / / _ \\ '__|\n";
+    std::cout << " | | | | (__  \\__ \\  __/ |   \\ V /  __/ |   \n";
+    std::cout << " |_|_|  \\___| |___/\\___|_|    \\_/ \\___|_|   \n";
+    std::cout << "                                             \n";
+    std::cout << "                                             \n";
+    std::cout << " By: yrafai && mkobaa\n";
     std::cout << "\n";
 }
 
@@ -75,17 +70,15 @@ std::list<std::string> Utils::splitCommand(const std::string& buffer) {
         if (!cmd.empty()) {
             size_t colonPos = cmd.find(" :");
             if (colonPos != std::string::npos) {
-                // Handle trailing parameter
                 std::string beforeColon = cmd.substr(0, colonPos);
                 std::istringstream iss(beforeColon);
                 std::string token;
                 while (iss >> token) {
                     if (!token.empty()) cmdList.push_back(token);
                 }
-                std::string trailing = cmd.substr(colonPos + 2); // Skip " :"
+                std::string trailing = cmd.substr(colonPos + 2);
                 if (!trailing.empty()) cmdList.push_back(trailing);
             } else {
-                // No trailing parameter, split normally
                 std::istringstream iss(cmd);
                 std::string token;
                 while (iss >> token) {

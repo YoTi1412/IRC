@@ -106,6 +106,7 @@ Client *Server::getClientByNickname(const std::string &nickname) const {
 // ------------------- Socket Initialization -------------------
 
 void Server::serverInit() {
+  Utils::displayBanner();
   increaseFdLimit();
   createSocket();
   configureServerAddress();

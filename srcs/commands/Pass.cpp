@@ -1,7 +1,4 @@
-#include "Command.hpp"
-#include "Utils.hpp"
-#include "Logger.hpp"
-#include "Replies.hpp"
+#include "Includes.hpp"
 
 /**
  * Validates the PASS command as specified in RFC 2812 (Section 3.1.1).

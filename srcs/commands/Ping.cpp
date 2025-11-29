@@ -1,5 +1,4 @@
-#include "Command.hpp"
-#include "Replies.hpp"
+#include "Includes.hpp"
 #include <list>
 
 /**

@@ -1,7 +1,4 @@
-#include "Command.hpp"
-#include "Utils.hpp"
-#include "Logger.hpp"
-#include "Replies.hpp"
+#include "Includes.hpp"
 
 /**
  * @brief Validates the NICK command according to RFC 2812 (Section 3.1.2).

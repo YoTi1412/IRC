@@ -7,6 +7,8 @@
 #include "PlayerStats.hpp"
 #include "Room.hpp"
 
+#define CRLF "\r\n"
+
 class Bot {
 private:
     std::string host;
@@ -22,7 +24,7 @@ private:
     void mainLoop();
     int initSocket(struct sockaddr_in &srv);
 
-    // send messages 
+    // send messages
     void send_all(const std::string &msg);
     void send_privmsg(const std::string &target, const std::string &msg);
     void send_scoreboard(const std::string &player);
@@ -38,15 +40,15 @@ private:
     bool isScore(const std::string &lower) const;
     bool parseCommand(const std::string &msg, std::vector<std::string> &out) const;
     void notifyRoomBothChose(Room &room);
-    
+
     // game
     int compare_rps(const std::string &player, const std::string &bot);
     bool parsePlayerMove(const std::string &message, std::string &playerTok) const;
     void handleMoveRound(const std::string &sender, const std::string &playerTok);
     void handleHelpCommand(const std::string &sender);
     static std::string choose_rps();
-    
-    
+
+
     // multiplayer rooms
     void handleCreateRoom(const std::string &player, const std::vector<std::string> &command);
     void handleJoinRoom(const std::string &player, const std::vector<std::string> &command);
@@ -55,7 +57,7 @@ private:
     void handleMultiplayerCommand(const std::string &sender, const std::vector<std::string> &cmd);
     void leaveCurrentRoomIfAny(const std::string &player, const std::string &exceptRoom);
     void handleMultiplayerMove(const std::string &sender, const std::string &move);
-    
+
 
 public:
     Bot(const std::string &host, int port, const std::string &password);

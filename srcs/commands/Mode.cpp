@@ -1,9 +1,5 @@
 
-#include "Command.hpp"
-#include "Utils.hpp"
-#include "Logger.hpp"
-#include "Replies.hpp"
-#include "Channel.hpp"
+#include "Includes.hpp"
 
 
 

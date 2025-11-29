@@ -213,7 +213,11 @@ void Bot::handleMultiplayerMove(const std::string &player, const std::string &mo
         send_privmsg(player, "Invalid move. Use rock|paper|cisor.");
         return;
     }
-    std::string normalizedMove = (move == "scissors") ? "cisor" : move;
+    std::string normalizedMove;
+    if (move == "scissors")
+        normalizedMove = "cisor";
+    else
+        normalizedMove = move;
     room.setPlayerChoice(player, normalizedMove);
     send_privmsg(player, "Move received. Waiting for the opponent...");
     if (room.bothChose())

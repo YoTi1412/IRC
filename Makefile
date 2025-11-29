@@ -3,7 +3,7 @@ CC          = c++
 CFLAGS      = -Wall -Werror -Wextra -std=c++98 -g -fsanitize=address
 
 HEADERS     = $(addprefix $(INC_PATH), Channel.hpp Client.hpp Command.hpp Includes.hpp Logger.hpp Message.hpp Replies.hpp Server.hpp Utils.hpp)
-BONUS_HEADERS = $(addprefix $(BONUS_PATH), Bot.hpp PlayerStats.hpp Room.hpp)
+BONUS_HEADERS = $(addprefix $(BONUS_PATH)includes/, Bot.hpp PlayerStats.hpp Room.hpp)
 
 SRCS_PATH   = srcs/
 CMD_PATH    = srcs/commands/
@@ -57,12 +57,12 @@ $(OBJ_PATH)%.o: $(SRCS_PATH)%.cpp $(HEADERS)
 
 $(BONUS_OBJ_PATH)%.o: $(BONUS_PATH)%.cpp $(BONUS_HEADERS)
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -I $(BONUS_PATH)includes -c $< -o $@
 
-bonus: $(NAME) bot/cisor_bot
+bonus: bot/cisor_bot
 
 bot/cisor_bot: $(BONUS_OBJS)
-	$(CC) $(CFLAGS) -o $@ $(BONUS_OBJS)
+	$(CC) $(CFLAGS) $(INCLUDES) -I $(BONUS_PATH)includes -o $@ $(BONUS_OBJS)
 
 clean:
 	rm -rf $(OBJ_PATH)

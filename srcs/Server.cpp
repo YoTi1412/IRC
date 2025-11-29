@@ -1,9 +1,6 @@
-#include "Server.hpp"
-#include "Client.hpp"
-#include "Command.hpp"
-#include "Logger.hpp"
-#include "Utils.hpp"
+#include "Includes.hpp"
 #include <cstring>
+#include <cctype>
 
 bool Server::signal = false;
 
@@ -163,7 +160,6 @@ void Server::configureServerAddress() {
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     serverAddress.sin_port = htons(port);
-    Logger::debug("Server address configured for port " + Utils::intToString(port));
 }
 
 void Server::setReuseAddr() {
@@ -171,7 +167,6 @@ void Server::setReuseAddr() {
     if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
         throw std::runtime_error("Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
     }
-    Logger::debug("SO_REUSEADDR option enabled on socket.");
 }
 
 void Server::bindSocket() {
@@ -200,7 +195,6 @@ void Server::initEpoll() {
     if (epoll_ctl(epfd, EPOLL_CTL_ADD, sock_fd, &ev) < 0) {
         throw std::runtime_error("Failed to add socket to epoll: " + std::string(strerror(errno)));
     }
-    Logger::debug("Epoll instance created and socket added successfully.");
 }
 
 void Server::logInitialization() {
@@ -228,7 +222,7 @@ void Server::waitForEvents(struct epoll_event events[], int& nfds) {
         throw std::runtime_error("Epoll wait failed: " + std::string(strerror(errno)));
     }
     if (nfds >= 0) {
-        Logger::debug("Epoll wait returned " + Utils::intToString(nfds) + " ready file descriptors.");
+        // suppressed verbose epoll debug output
     }
 }
 
@@ -243,14 +237,12 @@ void Server::processEvents(struct epoll_event events[], int nfds) {
       handleClientEvent(fd, eventFlags);
     }
   }
-  Logger::debug("Processed events for " + Utils::intToString(nfds) +
-                " file descriptors.");
+  // processed events (debug suppressed)
 }
 
 void Server::handleClientEvent(int fd, uint32_t events) {
   if (events & (EPOLLHUP | EPOLLERR)) {
-    Logger::debug("Client fd " + Utils::intToString(fd) +
-                  " disconnected (EPOLLHUP/EPOLLERR)");
+    // client disconnected (EPOLLHUP/EPOLLERR) - handled
     handleClientDisconnect(fd);
   } else if (events & EPOLLIN) {
     handleClientData(fd);
@@ -358,9 +350,8 @@ void Server::addClientToEpoll(int clientFd) {
                     " to epoll: " + strerror(errno));
     handleClientDisconnect(clientFd);
   } else {
-    Logger::debug("Added client fd " + Utils::intToString(clientFd) +
-                  " to epoll.");
-  }
+  // client added to epoll (debug suppressed)
+}
 }
 
 Client *Server::createNewClient(int clientFd, sockaddr_in &clientAddr) {
@@ -412,8 +403,7 @@ void Server::handleClientDisconnect(int fd) {
 
   // Remove from epoll
   if (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL) < 0) {
-    Logger::debug("Failed to remove fd " + Utils::intToString(fd) +
-                  " from epoll (may already be removed)");
+    // failed to remove fd from epoll (may already be removed) - debug suppressed
   }
 
   std::map<int, Client *>::iterator clientIt = clients.find(fd);
@@ -453,8 +443,7 @@ void Server::sendHttpResponse(int fd) {
 
 void Server::handleReadSuccess(int fd, char *buffer, int bytesRead) {
   buffer[bytesRead] = '\0';
-  Logger::debug("Read " + Utils::intToString(bytesRead) + " bytes from fd " +
-                Utils::intToString(fd) + ": " + buffer);
+  // read from client (content logging suppressed)
 
   if (looksLikeHTTP(buffer)) {
     sendHttpResponse(fd);
@@ -497,7 +486,12 @@ std::string Server::extractNextMessage(std::string &buffer) {
 }
 
 std::string Server::extractMessage(const std::string &buffer, size_t pos) {
-  size_t end = (pos > 0 && buffer[pos - 1] == '\r') ? pos - 1 : pos;
+  size_t end;
+  if (pos > 0 && buffer[pos - 1] == '\r') {
+    end = pos - 1;
+  } else {
+    end = pos;
+  }
   return buffer.substr(0, end);
 }
 
@@ -586,8 +580,12 @@ void Server::dispatchCommand(const std::string &cmd,
 }
 
 void Server::sendUnknownCommandError(Client *client, const std::string &cmd) {
-  std::string nick =
-      client->getNickname().empty() ? "*" : client->getNickname();
+  std::string nick;
+  if (client->getNickname().empty()) {
+    nick = "*";
+  } else {
+    nick = client->getNickname();
+  }
   client->sendReply(":ircserv " ERR_UNKNOWNCOMMAND " " + nick + " " + cmd +
                     " :Unknown command\r\n");
   Logger::warning("Unknown command received from client " +

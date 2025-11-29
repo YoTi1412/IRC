@@ -1,8 +1,4 @@
-#include "Command.hpp"
-#include "Utils.hpp"
-#include "Logger.hpp"
-#include "Replies.hpp"
-#include "Channel.hpp"
+#include "Includes.hpp"
 #include <sstream>
 
 namespace CommandUtils {
@@ -102,7 +98,11 @@ Client* getTargetClient(Server* server, Client* sender, const std::string& targe
  * @return Client's nickname or default value
  */
 std::string getNicknameOrDefault(Client* client, const std::string& defaultNick) {
-    return client->getNickname().empty() ? defaultNick : client->getNickname();
+    if (client->getNickname().empty()) {
+        return defaultNick;
+    } else {
+        return client->getNickname();
+    }
 }
 
 } // namespace CommandUtils

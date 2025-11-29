@@ -60,7 +60,7 @@ static bool validatePrivmsgParameters(std::list<std::string>& cmdList, Client* c
  * @return true if the message length is valid, false otherwise.
  */
 static bool validateMessageLength(const std::string& message, Client* client) {
-    std::string fullMsgWithCRLF = message + "\r\n";
+    std::string fullMsgWithCRLF = message + CRLF;
     if (fullMsgWithCRLF.length() > MAX_MESSAGE_LENGTH) {
         client->sendReply(std::string(IRC_SERVER) + " " + ERR_TOOMANYCHANNELS + " " +
                           client->getNickname() + " :Message too long");

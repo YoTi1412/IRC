@@ -1,13 +1,11 @@
-#include "Client.hpp"
-#include "Utils.hpp"
-#include "Logger.hpp"
+#include "Includes.hpp"
 #include <stdexcept>
 
 // Constructor
 Client::Client()
     : fd(-1), registered(false), authenticated(false), nickSet(false), userSet(false), realname(""), greeted(false)
 {
-    Logger::debug(LOG_CLIENT_CREATED);
+    Logger::info(LOG_CLIENT_CREATED);
 }
 
 // Destructor
@@ -37,30 +35,30 @@ void Client::setIPAddress(const std::string& ipAddress) { this->IPAddress = ipAd
 void Client::setNickname(const std::string& nickname) {
     this->nickname = nickname;
     nickSet = !nickname.empty();
-    Logger::debug(LOG_NICK_SET(nickname));
+    Logger::info(LOG_NICK_SET(nickname));
 }
 void Client::setUsername(const std::string& username) {
     this->username = username;
     userSet = !username.empty();
-    Logger::debug(LOG_USERNAME_SET(username));
+    Logger::info(LOG_USERNAME_SET(username));
 }
 void Client::setHostname(const std::string& hostname) {
     this->hostname = hostname;
-    Logger::debug(LOG_HOSTNAME_SET(hostname));
+    Logger::info(LOG_HOSTNAME_SET(hostname));
 }
 
 void Client::setRealname(const std::string& realname) {
     this->realname = realname;
-    Logger::debug("Realname set to: " + realname);
+    Logger::info("Realname set to: " + realname);
 }
 
 void Client::setAuthenticated(bool status) {
     authenticated = status;
-    Logger::debug(LOG_AUTH_STATUS(status));
+    Logger::info(LOG_AUTH_STATUS(status));
 }
 void Client::setRegistered(bool status) {
     registered = status;
-    Logger::debug(LOG_REG_STATUS(status));
+    Logger::info(LOG_REG_STATUS(status));
 }
 void Client::setNickSet(bool status) { nickSet = status; }
 void Client::setUserSet(bool status) { userSet = status; }
@@ -71,7 +69,6 @@ void Client::setGreeted(bool greeted) { this->greeted = greeted; }
 // Command Handling
 void Client::appendToCommandBuffer(const std::string& data) {
     commandBuffer += data;
-    Logger::debug("Appended " + Utils::intToString(data.length()) + " bytes to command buffer for fd " + Utils::intToString(fd));
 }
 
 // Reply Formatting
@@ -93,7 +90,7 @@ void Client::handleSendResult(ssize_t bytesSent, const std::string& formattedRep
     {
         if (errno == EPIPE || errno == ECONNRESET)
         {
-            Logger::debug("Peer already closed fd " + Utils::intToString(fd));
+            Logger::warning("Peer already closed fd " + Utils::intToString(fd));
         }
         else
         {
@@ -108,8 +105,7 @@ void Client::handleSendResult(ssize_t bytesSent, const std::string& formattedRep
     }
     else
     {
-        Logger::debug("Sent " + Utils::intToString(bytesSent) +
-                      " bytes to fd " + Utils::intToString(fd) + ": " + formattedReply);
+        // Successful send — avoid verbose logging here to prevent leaking message content
     }
 }
 

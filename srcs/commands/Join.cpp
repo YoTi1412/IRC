@@ -1,8 +1,4 @@
-#include "Command.hpp"
-#include "Utils.hpp"
-#include "Logger.hpp"
-#include "Replies.hpp"
-#include "Channel.hpp"
+#include "Includes.hpp"
 
 /**
  * @brief Validates channel name according to RFC 2812 (Section 3.2.1).
@@ -177,20 +173,20 @@ static bool validateChannelModes(Channel* channel, Client* client, const std::st
  */
 static void sendJoinMessages(const std::string& channelName, Channel* channel, Client* client) {
     std::string userIdent = client->getNickname() + "!" + client->getUsername() + "@" + client->getHostname();
-    std::string joinMsg = ":" + userIdent + " JOIN " + channelName + "\r\n";
+    std::string joinMsg = ":" + userIdent + " JOIN " + channelName + CRLF;
     channel->broadcast(joinMsg, NULL);
 
     if (!channel->getTopic().empty()) {
         client->sendReply(std::string(IRC_SERVER) + " " + RPL_TOPIC + " " +
-                          client->getNickname() + " " + channelName + " :" + channel->getTopic() + "\r\n");
-        client->sendReply(":ircserv NOTICE " + client->getNickname() + " :Topic set by " +
-                          channel->getTopicSetter() + " at " + Utils::formatTime(channel->getTopicTime()) + "\r\n");
+                          client->getNickname() + " " + channelName + " :" + channel->getTopic() + CRLF);
+        client->sendReply(std::string(":ircserv NOTICE ") + client->getNickname() + " :Topic set by " +
+                          channel->getTopicSetter() + " at " + Utils::formatTime(channel->getTopicTime()) + CRLF);
     }
 
     client->sendReply(std::string(IRC_SERVER) + " " + RPL_NAMREPLY + " " +
-                      client->getNickname() + " = " + channelName + " :" + channel->getMemberList() + "\r\n");
+                      client->getNickname() + " = " + channelName + " :" + channel->getMemberList() + CRLF);
     client->sendReply(std::string(IRC_SERVER) + " " + RPL_ENDOFNAMES + " " +
-                      client->getNickname() + " " + channelName + " :End of NAMES list\r\n");
+                      client->getNickname() + " " + channelName + " :End of NAMES list" + CRLF);
 }
 
 /**
@@ -258,7 +254,12 @@ void handleJoin(std::list<std::string> cmdList, Client* client, Server* server) 
 
     std::list<std::string>::iterator keyIt = keys.begin();
     for (std::list<std::string>::iterator chanIt = channels.begin(); chanIt != channels.end(); ++chanIt) {
-        std::string key = (keyIt != keys.end()) ? *keyIt++ : "";
+        std::string key;
+        if (keyIt != keys.end()) {
+            key = *keyIt++;
+        } else {
+            key = "";
+        }
         processSingleJoin(*chanIt, key, client, server);
     }
 }

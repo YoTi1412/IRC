@@ -1,5 +1,4 @@
-#include "Utils.hpp"
-#include "Server.hpp"
+#include "Includes.hpp"
 #include <iostream>
 
 void Utils::displayBanner() {

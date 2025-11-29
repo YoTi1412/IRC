@@ -1,8 +1,4 @@
 #include "Includes.hpp"
-#include "Logger.hpp"
-#include "Utils.hpp"
-#include "Server.hpp"
-#include <stdexcept>
 
 int main(int argc, char** argv)
 {

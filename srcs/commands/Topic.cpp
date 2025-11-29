@@ -1,7 +1,4 @@
-#include "Command.hpp"
-#include "Utils.hpp"
-#include "Logger.hpp"
-#include "Replies.hpp"
+#include "Includes.hpp"
 #include "Channel.hpp"
 
 /**
@@ -53,7 +50,7 @@ void broadcastTopicChange(Channel* channel, Client* client, const std::string& c
             message.erase(pos + 1);
         }
     }
-    channel->broadcast(message + "\r\n", NULL);
+    channel->broadcast(message + CRLF, NULL);
 }
 
 /**
@@ -66,9 +63,9 @@ static void handleTopicView(Channel* channel, Client* client) {
                           client->getNickname() + " " + channel->getName() + " :No topic is set\r\n");
     } else {
         client->sendReply(std::string(IRC_SERVER) + " " + RPL_TOPIC + " " +
-                          client->getNickname() + " " + channel->getName() + " :" + channel->getTopic() + "\r\n");
-        client->sendReply(":ircserv NOTICE " + client->getNickname() + " :Topic set by " +
-                          channel->getTopicSetter() + " at " + Utils::formatTime(channel->getTopicTime()) + "\r\n");
+                          client->getNickname() + " " + channel->getName() + " :" + channel->getTopic() + CRLF);
+        client->sendReply(std::string(":ircserv NOTICE ") + client->getNickname() + " :Topic set by " +
+                          channel->getTopicSetter() + " at " + Utils::formatTime(channel->getTopicTime()) + CRLF);
     }
 }
 

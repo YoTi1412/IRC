@@ -1,4 +1,6 @@
+#include "Includes.hpp"
 #include "Logger.hpp"
+#include <sstream>
 
 Logger::Logger() {}
 
@@ -15,18 +17,35 @@ Logger &Logger::operator=(const Logger &other) {
 
 Logger::~Logger() {}
 
-void Logger::debug(const std::string &msg) {
-	std::cout << CYAN << "[DEBUG] " << msg << RESET << std::endl;
+static inline std::string currentTimestamp() {
+    time_t now = time(NULL);
+    return Utils::formatTime(now);
 }
 
+static inline void printHeader(std::ostream &os, const char *color, const char *level) {
+    os << color << "[" << currentTimestamp() << "] [" << level << "] " << RESET;
+}
+
+// void Logger::debug(const std::string &msg) {
+//     (void)msg;
+// #ifdef DEBUG
+//     std::ostringstream oss;
+//     printHeader(std::cerr, CYAN, "DEBUG");
+//     std::cerr << oss.str() << msg << std::endl;
+// #endif
+// }
+
 void Logger::warning(const std::string &msg) {
-	std::cout << YELLOW << "[WARNING] " << msg << RESET << std::endl;
+    printHeader(std::cerr, YELLOW, "WARNING");
+    std::cerr << msg << std::endl;
 }
 
 void Logger::info(const std::string &msg) {
-	std::cout << GREEN << "[INFO] " << msg << RESET << std::endl;
+    printHeader(std::cout, GREEN, "INFO");
+    std::cout << msg << std::endl;
 }
 
 void Logger::error(const std::exception& e) {
-	std::cerr << RED << "[ERROR] Exception: " << e.what() << RESET << std::endl;
+    printHeader(std::cerr, RED, "ERROR");
+    std::cerr << "Exception: " << e.what() << std::endl;
 }

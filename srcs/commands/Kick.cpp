@@ -1,4 +1,4 @@
-#include "Command.hpp"
+#include "Includes.hpp"
 
 
 static bool validateJoinParameters(std::list<std::string>& cmdList, Client* client) {

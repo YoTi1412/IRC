@@ -1,8 +1,4 @@
-#include "Command.hpp"
-#include "Utils.hpp"
-#include "Logger.hpp"
-#include "Replies.hpp"
-#include "Channel.hpp"
+#include "Includes.hpp"
 
 /**
  * @brief Validates channel name according to RFC 2812 (Section 3.2.2).

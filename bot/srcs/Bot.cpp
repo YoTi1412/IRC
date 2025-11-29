@@ -35,7 +35,7 @@ void Bot::send_all(const std::string &msg)
 
 void Bot::send_privmsg(const std::string &target, const std::string &msg)
 {
-    send_all(std::string("PRIVMSG ") + target + " :" + msg + "\r\n");
+    send_all(std::string("PRIVMSG ") + target + " :" + msg + CRLF);
 }
 
 
@@ -148,9 +148,9 @@ bool Bot::parseCommand(const std::string &msg, std::vector<std::string> &out) co
 
 void Bot::auth(const std::string &password)
 {
-    send_all(std::string("PASS ") + password + "\r\n");
-    send_all(std::string("NICK cisor\r\n"));
-    send_all(std::string("USER bot 0 * :cisor bot\r\n"));
+    send_all(std::string("PASS ") + password + CRLF);
+    send_all(std::string("NICK cisor") + CRLF);
+    send_all(std::string("USER bot 0 * :cisor bot") + CRLF);
 }
 
 void Bot::mainLoop()

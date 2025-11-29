@@ -2,7 +2,6 @@
 
 #include "Includes.hpp"
 
-#define CRLF "\r\n"
 #define MAX_MESSAGE_LENGTH 512
 #define MAX_MESSAGE_BODY 510
 
@@ -12,8 +11,20 @@
 #define LOG_NICK_SET(nick) ("Nickname set to: " + nick)
 #define LOG_USERNAME_SET(user) ("Username set to: " + user)
 #define LOG_HOSTNAME_SET(host) ("Hostname set to: " + host)
-#define LOG_AUTH_STATUS(status) ("Client authentication status set to: " + std::string(status ? "true" : "false"))
-#define LOG_REG_STATUS(status) ("Client registration status set to: " + std::string(status ? "true" : "false"))
+inline std::string LOG_AUTH_STATUS(bool status) {
+    if (status) {
+        return "Client authentication status set to: true";
+    } else {
+        return "Client authentication status set to: false";
+    }
+}
+inline std::string LOG_REG_STATUS(bool status) {
+    if (status) {
+        return "Client registration status set to: true";
+    } else {
+        return "Client registration status set to: false";
+    }
+}
 #define LOG_PARTIAL_SEND(fd, sent, total) ("Partial send to fd " + Utils::intToString(fd) + ": " + Utils::intToString(sent) + "/" + Utils::intToString(total) + " bytes")
 #define LOG_SEND_FAILED(fd, err) ("Failed to send reply to fd " + Utils::intToString(fd) + ": " + err)
 #define LOG_SEND_TRUNCATED(fd) ("Reply too long for fd " + Utils::intToString(fd) + ", truncating to 510 bytes + CRLF")

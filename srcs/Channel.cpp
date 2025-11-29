@@ -1,3 +1,4 @@
+#include "Includes.hpp"
 #include "Channel.hpp"
 
 Channel::Channel(const std::string& channelName, Client* creator)
@@ -69,18 +70,36 @@ void Channel::setTopic(const std::string& newTopic, Client* setter) {
 
 void Channel::setKey(const std::string& newKey) {
     key = newKey;
-    Logger::info("Key " + std::string(key.empty() ? "removed from " : "set for ") + name);
+    std::string action;
+    if (key.empty()) {
+        action = "removed from ";
+    } else {
+        action = "set for ";
+    }
+    Logger::info("Key " + action + name);
 }
 
 void Channel::setSecret(bool flag) {
     secret = flag;
-    Logger::info("Secret status " + std::string(flag ? "enabled" : "disabled") + " for " + name);
+    std::string status;
+    if (flag) {
+        status = "enabled";
+    } else {
+        status = "disabled";
+    }
+    Logger::info("Secret status " + status + " for " + name);
 }
 
 void Channel::setLimit(size_t newLimit) {
     limit = newLimit;
     limited = (newLimit > 0);
-    Logger::info("Limit " + std::string(limited ? "set to " + Utils::intToString(newLimit) : "removed") + " for " + name);
+    std::string info;
+    if (limited) {
+        info = "set to " + Utils::intToString(newLimit);
+    } else {
+        info = "removed";
+    }
+    Logger::info("Limit " + info + " for " + name);
 }
 
 void Channel::setLimited(bool flag)
@@ -90,12 +109,24 @@ void Channel::setLimited(bool flag)
 
 void Channel::setInviteOnly(bool flag) {
     inviteOnly = flag;
-    Logger::info("Invite-only " + std::string(flag ? "enabled" : "disabled") + " for " + name);
+    std::string status;
+    if (flag) {
+        status = "enabled";
+    } else {
+        status = "disabled";
+    }
+    Logger::info("Invite-only " + status + " for " + name);
 }
 
 void Channel::setTopicRestricted(bool flag) {
     topicRestricted = flag;
-    Logger::info("Topic restriction " + std::string(flag ? "enabled" : "disabled") + " for " + name);
+    std::string status;
+    if (flag) {
+        status = "enabled";
+    } else {
+        status = "disabled";
+    }
+    Logger::info("Topic restriction " + status + " for " + name);
 }
 
 void Channel::addInvite(int fd) {

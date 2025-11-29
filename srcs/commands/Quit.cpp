@@ -1,9 +1,4 @@
-#include "Command.hpp"
-#include "Replies.hpp"
-#include "Logger.hpp"
-#include <set>
-#include <map>
-#include <list>
+#include "Includes.hpp"
 
 /**
  * RFC 2812 §3.1 Registration

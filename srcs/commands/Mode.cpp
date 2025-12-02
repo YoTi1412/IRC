@@ -1,10 +1,6 @@
 
 #include "Includes.hpp"
 
-
-
-
-
 static bool validateCommand(std::list<std::string>& cmdList, Client* client)
 {
     if (!CommandUtils::validateParameters(cmdList, client, "MODE", 3))
@@ -33,7 +29,6 @@ bool checkModes(std::string modes)
     }
     return true;
 }
-
 
 bool validateModes(std::string modes)
 {
@@ -65,8 +60,6 @@ void broadcastModeChange(Channel* channel, Client* client, const std::string& ch
 
     channel->broadcast(oss.str(), client);
 }
-
-
 
 void sendError(Client* client, const std::string& code, const std::string& message)
 {
@@ -173,7 +166,6 @@ bool needsParameter(std::string mode)
     return false;
 }
 
-
 void handleNonParameter(std::string mode, Channel* channel, Client* client)
 {
     if (mode == "+i")
@@ -207,7 +199,6 @@ void handleNonParameter(std::string mode, Channel* channel, Client* client)
         broadcastModeChange(channel, client, channel->getName(), mode);
     }
 }
-
 
 void handleWithParameter(std::string mode, std::string parameter, Channel* channel, Client* client, Server* server)
 {
@@ -251,7 +242,6 @@ void handleWithParameter(std::string mode, std::string parameter, Channel* chann
 
 }
 
-
 void handleTheMode(std::vector<std::string> modesVector, std::vector<std::string> ParametersVector, Client* client, Channel* channel, Server* server)
 {
     size_t paramIndex = 0;
@@ -274,9 +264,6 @@ void handleTheMode(std::vector<std::string> modesVector, std::vector<std::string
         }
     }
 }
-
-
-
 
 void handleMode(std::list<std::string> cmdList, Client* client, Server* server)
 {

@@ -38,7 +38,6 @@ void Bot::send_privmsg(const std::string &target, const std::string &msg)
     send_all(std::string("PRIVMSG ") + target + " :" + msg + CRLF);
 }
 
-
 void Bot::handleHelpCommand(const std::string &sender)
 {
     send_privmsg(sender, "Welcome to the Cisor Bot!");
@@ -49,7 +48,6 @@ void Bot::handleHelpCommand(const std::string &sender)
     send_privmsg(sender, "Rules: Room must have 2 players to start, and you must type play before your move.");
     send_privmsg(sender, "Example: PRIVMSG cisor :play rock");
 }
-
 
 void Bot::handleLine(const std::string &line)
 {
@@ -133,7 +131,6 @@ bool Bot::extractPrivmsg(const std::string &line, std::string &senderNick, std::
     return !senderNick.empty();
 }
 
-
 bool Bot::parseCommand(const std::string &msg, std::vector<std::string> &out) const
 {
     out.clear();
@@ -156,7 +153,7 @@ void Bot::auth(const std::string &password)
 void Bot::mainLoop()
 {
     char buf[BUFFER+1];
-    while (true) 
+    while (true)
     {
         ssize_t n = recv(sock, buf, BUFFER, 0);
         if (n <= 0)
@@ -170,13 +167,13 @@ void Bot::mainLoop()
             trim_crlf(line);
             if (line.empty())
                 continue;
-            
+
             if (line.find("Password incorrect") != std::string::npos)
             {
                 std::cerr << "Authentication failed: Password incorrect" << std::endl;
                 return;
             }
-            
+
             handleLine(line);
         }
     }
@@ -220,10 +217,10 @@ int Bot::run()
         return 1;
     std::signal(SIGPIPE, SIG_IGN);
     auth(password);
-    
+
     displayBanner();
-    
+
     mainLoop();
-    
+
     return 0;
 }

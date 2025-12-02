@@ -103,8 +103,6 @@ Client *Server::getClientByNickname(const std::string &nickname) const {
   return NULL;
 }
 
-// ------------------- Socket Initialization -------------------
-
 void Server::serverInit() {
   Utils::displayBanner();
   increaseFdLimit();
@@ -202,8 +200,6 @@ void Server::logInitialization() {
   Logger::info("Server initialized on port " + Utils::intToString(port));
 }
 
-// ------------------- Event Loop -------------------
-
 void Server::serverRun() {
   struct epoll_event events[MAX_EVENTS];
   while (!signal) {
@@ -223,7 +219,7 @@ void Server::waitForEvents(struct epoll_event events[], int& nfds) {
         throw std::runtime_error("Epoll wait failed: " + std::string(strerror(errno)));
     }
     if (nfds >= 0) {
-        // suppressed verbose epoll debug output
+
     }
 }
 
@@ -238,19 +234,17 @@ void Server::processEvents(struct epoll_event events[], int nfds) {
       handleClientEvent(fd, eventFlags);
     }
   }
-  // processed events (debug suppressed)
+
 }
 
 void Server::handleClientEvent(int fd, uint32_t events) {
   if (events & (EPOLLHUP | EPOLLERR)) {
-    // client disconnected (EPOLLHUP/EPOLLERR) - handled
+
     handleClientDisconnect(fd);
   } else if (events & EPOLLIN) {
     handleClientData(fd);
   }
 }
-
-// ------------------- Client Connection -------------------
 
 void Server::acceptNewConnection() {
   sockaddr_in clientAddr;
@@ -281,11 +275,9 @@ void Server::configureNewClient(int clientFd, sockaddr_in &clientAddr) {
     return;
   }
 
-  // Check if client still exists after tryHandleHttpClient (could be deleted by
-  // QUIT command)
   std::map<int, Client *>::iterator clientIt = clients.find(clientFd);
   if (clientIt == clients.end()) {
-    return; // Client was disconnected during tryHandleHttpClient
+    return;
   }
 
   sendIrcGreeting(clientIt->second);
@@ -305,7 +297,7 @@ bool Server::tryHandleHttpClient(int clientFd) {
   if (bytesRead <= 0) {
     if (bytesRead == 0 ||
         (bytesRead < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))) {
-      return false; // No data, assume IRC
+      return false;
     }
     Logger::warning("Immediate read error on fd: " +
                     Utils::intToString(clientFd) + ", " + strerror(errno));
@@ -320,10 +312,9 @@ bool Server::tryHandleHttpClient(int clientFd) {
     return true;
   }
 
-  // Not HTTP, process as IRC
   std::map<int, Client *>::iterator clientIt = clients.find(clientFd);
   if (clientIt == clients.end()) {
-    return true; // Client was disconnected, treat as handled
+    return true;
   }
   Client *client = clientIt->second;
   client->appendToCommandBuffer(buffer);
@@ -337,10 +328,10 @@ void Server::sendIrcGreeting(Client *client) {
 }
 
 void Server::addClientToEpoll(int clientFd) {
-  // Check if client still exists before adding to epoll
+
   std::map<int, Client *>::iterator clientIt = clients.find(clientFd);
   if (clientIt == clients.end()) {
-    return; // Client was disconnected, don't add to epoll
+    return;
   }
 
   struct epoll_event ev;
@@ -351,7 +342,7 @@ void Server::addClientToEpoll(int clientFd) {
                     " to epoll: " + strerror(errno));
     handleClientDisconnect(clientFd);
   } else {
-  // client added to epoll (debug suppressed)
+
 }
 }
 
@@ -369,8 +360,6 @@ void Server::logNewConnection(int clientFd, const char *ip, int port) {
   Logger::info("New client connected, fd: " + Utils::intToString(clientFd) +
                ", IP: " + ip + ", Port: " + Utils::intToString(port));
 }
-
-// ------------------- Client Data Handling -------------------
 
 void Server::handleClientData(int fd) {
   char buffer[BUFFER_SIZE] = {0};
@@ -398,19 +387,18 @@ void Server::handleReadError(int fd) {
 
 void Server::handleClientDisconnect(int fd) {
   if (processedFds.find(fd) != processedFds.end()) {
-    return; // Already processed
+    return;
   }
   processedFds.insert(fd);
 
-  // Remove from epoll
   if (epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL) < 0) {
-    // failed to remove fd from epoll (may already be removed) - debug suppressed
+
   }
 
   std::map<int, Client *>::iterator clientIt = clients.find(fd);
   if (clientIt != clients.end()) {
     Client *client = clientIt->second;
-    // Remove from channels
+
     std::map<std::string, Channel *>::iterator chanIt = channels.begin();
     while (chanIt != channels.end()) {
       Channel *channel = chanIt->second;
@@ -437,14 +425,13 @@ void Server::sendHttpResponse(int fd) {
                      "Content-Type: text/plain\r\n"
                      "Content-Length: 31\r\n"
                      "Connection: close\r\n"
-                     "\r\n"
+                     CRLF
                      "This is an IRC server mate ;)\r\n";
   send(fd, http, strlen(http), MSG_NOSIGNAL);
 }
 
 void Server::handleReadSuccess(int fd, char *buffer, int bytesRead) {
   buffer[bytesRead] = '\0';
-  // read from client (content logging suppressed)
 
   if (looksLikeHTTP(buffer)) {
     sendHttpResponse(fd);
@@ -521,8 +508,6 @@ void Server::tokenizePrefix(const std::string &prefix,
     cmdList.push_back(token);
   }
 }
-
-// ------------------- Command Execution -------------------
 
 void Server::executeCommand(int fd, std::list<std::string> cmdList) {
   if (cmdList.empty()) {
@@ -611,8 +596,6 @@ void Server::removeChannel(const std::string &channelName) {
     Logger::info("Channel " + name_copy + " deleted and erased.");
   }
 }
-
-// ------------------- Signal Handling -------------------
 
 void Server::sigHandler(int sig) {
   (void)sig;

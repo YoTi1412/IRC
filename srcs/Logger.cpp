@@ -26,15 +26,6 @@ static inline void printHeader(std::ostream &os, const char *color, const char *
     os << color << "[" << currentTimestamp() << "] [" << level << "] " << RESET;
 }
 
-// void Logger::debug(const std::string &msg) {
-//     (void)msg;
-// #ifdef DEBUG
-//     std::ostringstream oss;
-//     printHeader(std::cerr, CYAN, "DEBUG");
-//     std::cerr << oss.str() << msg << std::endl;
-// #endif
-// }
-
 void Logger::warning(const std::string &msg) {
     printHeader(std::cerr, YELLOW, "WARNING");
     std::cerr << msg << std::endl;

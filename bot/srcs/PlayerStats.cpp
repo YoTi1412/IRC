@@ -8,7 +8,7 @@ PlayerStats::PlayerStats(): wins(0), losses(0), ties(0), played(0), sets_won(0),
 
 PlayerStats::~PlayerStats()
 {
-    // trivial destructor
+
 }
 
 void PlayerStats::addWin()

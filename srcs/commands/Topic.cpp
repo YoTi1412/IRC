@@ -1,30 +1,10 @@
 #include "Includes.hpp"
 #include "Channel.hpp"
 
-/**
- * @brief Validates the TOPIC command parameters per RFC 2812 §4.2.4.
- * Ensures at least the channel name is provided; returns false with ERR_NEEDMOREPARAMS (461) if insufficient.
- */
 static bool validateParameters(std::list<std::string>& cmdList, Client* client) {
     return CommandUtils::validateParameters(cmdList, client, "TOPIC", 2);
 }
 
-/**
- * @brief Validates client registration status per RFC 2812 §3.1.
- * Ensures the client is registered; returns false with ERR_NOTREGISTERED (451) if not.
- */
-
-
-/**
- * @brief Retrieves the channel object for the given name per RFC 2812 §4.2.4.
- * Returns NULL and sends ERR_NOSUCHCHANNEL (403) if the channel does not exist.
- */
-
-
-/**
- * @brief Checks if the client is a member of the channel per RFC 2812 §4.2.4.
- * Returns false and sends ERR_NOTONCHANNEL (442) if the client is not a member.
- */
 static bool checkExistingMembership(Channel* channel, Client* client) {
     if (!channel->isMember(client)) {
         client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOTONCHANNEL + " " +
@@ -34,10 +14,6 @@ static bool checkExistingMembership(Channel* channel, Client* client) {
     return true;
 }
 
-/**
- * @brief Broadcasts the topic change to all channel members per RFC 2812 §4.2.4.
- * Constructs and sends the TOPIC message with proper prefix and trailing format.
- */
 void broadcastTopicChange(Channel* channel, Client* client, const std::string& channelName, const std::string& topic) {
     std::ostringstream oss;
     oss << ":" << client->getNickname() << "!" << client->getUsername()
@@ -53,10 +29,6 @@ void broadcastTopicChange(Channel* channel, Client* client, const std::string& c
     channel->broadcast(message + CRLF, NULL);
 }
 
-/**
- * @brief Handles viewing the current topic per RFC 2812 §4.2.4.
- * Sends RPL_NOTOPIC (331) if no topic, or RPL_TOPIC (332) with the topic, followed by a NOTICE with setter/time.
- */
 static void handleTopicView(Channel* channel, Client* client) {
     if (channel->getTopic().empty()) {
         client->sendReply(std::string(IRC_SERVER) + " " + RPL_NOTOPIC + " " +
@@ -69,10 +41,6 @@ static void handleTopicView(Channel* channel, Client* client) {
     }
 }
 
-/**
- * @brief Validates and processes the topic setting per RFC 2812 §4.2.4.
- * Ensures exactly one topic parameter, strips leading ':', trims spaces, and enforces +t restriction.
- */
 static bool processTopicSet(std::list<std::string>& cmdList, std::list<std::string>::iterator& it, Channel* channel, Client* client) {
     if (cmdList.size() > 3) {
         client->sendReply(std::string(IRC_SERVER) + " " + ERR_NEEDMOREPARAMS + " " +
@@ -104,10 +72,6 @@ static bool processTopicSet(std::list<std::string>& cmdList, std::list<std::stri
     return true;
 }
 
-/**
- * @brief Main handler for the TOPIC command per RFC 2812 §4.2.4.
- * Coordinates validation, channel access, and topic viewing/setting logic.
- */
 void handleTopic(std::list<std::string> cmdList, Client* client, Server* server) {
     if (!validateParameters(cmdList, client) || !CommandUtils::validateClientRegistration(client)) {
         return;

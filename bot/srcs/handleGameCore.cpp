@@ -4,9 +4,6 @@
 #include <iomanip>
 #include <cstdlib>
 
-
-
-
 std::string Bot::choose_rps()
 {
     int randomIndex = std::rand() % 3;
@@ -16,12 +13,6 @@ std::string Bot::choose_rps()
         return "paper";
     return "cisor";
 }
-
-
-
-
-
-
 
 void Bot::send_scoreboard(const std::string &player)
 {
@@ -49,8 +40,6 @@ void Bot::send_scoreboard(const std::string &player)
         send_privmsg(player, line);
     }
 }
-
-
 
 bool Bot::parsePlayerMove(const std::string &message, std::string &playerTok) const
 {

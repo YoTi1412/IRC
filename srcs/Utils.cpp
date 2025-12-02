@@ -64,7 +64,7 @@ int Utils::setnonblocking(int fd) {
 
 std::list<std::string> Utils::splitCommand(const std::string& buffer) {
     std::list<std::string> cmdList;
-    size_t pos = buffer.find("\r\n");
+    size_t pos = buffer.find(CRLF);
     if (pos != std::string::npos) {
         std::string cmd = buffer.substr(0, pos);
         if (!cmd.empty()) {

@@ -15,9 +15,7 @@ class Logger {
 		Logger &operator=(const Logger &other);
 		~Logger();
 	public:
-		static void debug(const std::string &msg);
 		static void warning(const std::string &msg);
 		static void info(const std::string &msg);
-		static void error(const std::string &msg);
 		static void error(const std::exception& e);
 };

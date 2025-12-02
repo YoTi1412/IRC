@@ -1,13 +1,8 @@
 #include "Includes.hpp"
 
-
 static bool validateJoinParameters(std::list<std::string>& cmdList, Client* client) {
     return CommandUtils::validateParameters(cmdList, client, "KICK", 2);
 }
-
-
-
-
 
 static bool checkExistingMembership(Channel* channel, Client* client)
 {

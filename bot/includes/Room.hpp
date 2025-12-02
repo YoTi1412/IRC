@@ -25,8 +25,8 @@ public:
     bool hasPlayer(const std::string &nick) const;
     bool addPlayer(const std::string &nick);
     void removePlayer(const std::string &nick);
-    bool isReady() const; // both players present
-    bool setPlayerChoice(const std::string &nick, const std::string &choice); // returns true if accepted
+    bool isReady() const;
+    bool setPlayerChoice(const std::string &nick, const std::string &choice);
     bool bothChose() const;
     void clearChoices();
     int getRoundsPlayed() const;
@@ -37,14 +37,14 @@ public:
     const std::string &getPlayer2Nick() const;
     const std::string &getPlayer1Choice() const;
     const std::string &getPlayer2Choice() const;
-    void applyOutcome(int outcome); // 1 means p1 win, -1 p2 win, 0 tie
-    bool isOver() const; // played >= 5
-    // Sets ("big wins") tracking
+    void applyOutcome(int outcome);
+    bool isOver() const;
+
     int getPlayer1SetsWon() const;
     int getPlayer2SetsWon() const;
     void addPlayer1SetWin();
     void addPlayer2SetWin();
-    void resetRoundCounters(); // clear w1/w2/ties/played and choices to start a new set
+    void resetRoundCounters();
 };
 
 #endif

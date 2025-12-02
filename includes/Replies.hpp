@@ -5,18 +5,16 @@
 #define NICK_PREFIX ":"
 #define IRC_SERVER ":ircserv"
 
-// Client-Server Replies (001-099)
 #define RPL_WELCOME         "001"
 #define RPL_YOURHOST        "002"
 #define RPL_CREATED         "003"
 #define RPL_MYINFO          "004"
 #define RPL_NOTOPIC         "331"
-#define RPL_TOPIC           "332"  // Added: Channel topic reply
+#define RPL_TOPIC           "332"
 #define RPL_TOPICWHOTIME    "303"
-#define RPL_NAMREPLY        "353"  // Added: Names list reply
-#define RPL_ENDOFNAMES      "366"  // Added: End of names list
+#define RPL_NAMREPLY        "353"
+#define RPL_ENDOFNAMES      "366"
 
-// Error Replies (400-599)
 #define ERR_NOSUCHNICK      "401"
 #define ERR_NOSUCHCHANNEL   "403"
 #define ERR_CANNOTSENDTOCHAN "404"
@@ -31,7 +29,7 @@
 #define ERR_NOTONCHANNEL    "442"
 #define ERR_USERONCHANNEL   "443"
 #define ERR_NOLOGIN         "444"
-#define ERR_NOTREGISTERED   "451"  // Added: Client not registered
+#define ERR_NOTREGISTERED   "451"
 #define ERR_NEEDMOREPARAMS  "461"
 #define ERR_ALREADYREGISTRED "462"
 #define ERR_NOPERMFORHOST   "463"
@@ -55,5 +53,4 @@
 #define ERR_UMODEUNKNOWNFLAG "501"
 #define ERR_USERSDONTMATCH  "502"
 
-// Custom Error for Order Enforcement (not in RFC 2812)
 #define ERR_OUTOFORDER      "495"

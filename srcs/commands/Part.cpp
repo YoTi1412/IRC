@@ -1,8 +1,5 @@
 #include "Includes.hpp"
 
-/**
- * @brief Validates channel name according to RFC 2812 (Section 3.2.2).
- */
 static bool isValidChannelName(const std::string& name) {
     if (name.empty() || name.length() > 50 || name[0] != '#') {
         return false;
@@ -15,19 +12,6 @@ static bool isValidChannelName(const std::string& name) {
     return name.length() > 1;
 }
 
-/**
- * @brief Verifies client registration status for PART command as per RFC 2812 (Section 3.2.2).
- */
-
-
-/**
- * @brief Retrieves the channel if it exists as per RFC 2812 (Section 3.2.2).
- */
-
-
-/**
- * @brief Checks if the client is a member of the channel as per RFC 2812 (Section 3.2.2).
- */
 static bool checkMembership(Channel* channel, Client* client) {
     if (!channel->isMember(client)) {
         client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOTONCHANNEL + " " +
@@ -37,9 +21,6 @@ static bool checkMembership(Channel* channel, Client* client) {
     return true;
 }
 
-/**
- * @brief Broadcasts PART message to the channel as per RFC 2812 (Section 3.2.2).
- */
 static void sendPartMessage(const std::string& channelName, const std::string& message, Client* client, Channel* channel) {
     std::string userIdent = client->getNickname() + "!" + client->getUsername() + "@" + client->getHostname();
     std::string partMsg = ":" + userIdent + " PART " + channelName;
@@ -49,9 +30,6 @@ static void sendPartMessage(const std::string& channelName, const std::string& m
     channel->broadcast(partMsg, NULL);
 }
 
-/**
- * @brief Removes a client from the channel and deletes it if empty as per RFC 2812 (Section 3.2.2).
- */
 static void removeClientFromChannel(const std::string& channelName, Client* client, Channel* channel, Server* server) {
     channel->removeMember(client);
     if (channel->getMemberCount() == 0) {
@@ -62,9 +40,6 @@ static void removeClientFromChannel(const std::string& channelName, Client* clie
     Logger::info(client->getNickname() + " parted " + channelName);
 }
 
-/**
- * @brief Processes a single channel part operation as per RFC 2812 (Section 3.2.2).
- */
 static void processSinglePart(const std::string& channelName, const std::string& message, Client* client, Server* server) {
     if (!isValidChannelName(channelName)) {
         client->sendReply(std::string(IRC_SERVER) + " " + ERR_NOSUCHCHANNEL + " " +
@@ -81,9 +56,6 @@ static void processSinglePart(const std::string& channelName, const std::string&
     removeClientFromChannel(channelName, client, channel, server);
 }
 
-/**
- * @brief Extracts the part message from command arguments as per RFC 2812 (Section 3.2.2).
- */
 static std::string extractPartMessage(std::list<std::string>::iterator it, std::list<std::string>& cmdList) {
     std::string message;
     if (it != cmdList.end()) {
@@ -98,9 +70,6 @@ static std::string extractPartMessage(std::list<std::string>::iterator it, std::
     return message;
 }
 
-/**
- * @brief Handles missing or invalid parameters for PART command as per RFC 2812 (Section 3.2.2).
- */
 static bool handleMissingParams(const std::string& channelsStr, Client* client) {
     if (channelsStr.empty() || channelsStr[0] == ':') {
         client->sendReply(std::string(IRC_SERVER) + " " + ERR_NEEDMOREPARAMS + " " +
@@ -110,9 +79,6 @@ static bool handleMissingParams(const std::string& channelsStr, Client* client) 
     return false;
 }
 
-/**
- * @brief Handles the PART command as per RFC 2812 (Section 3.2.2).
- */
 void handlePart(std::list<std::string> cmdList, Client* client, Server* server) {
     if (!CommandUtils::validateClientRegistration(client)) return;
 

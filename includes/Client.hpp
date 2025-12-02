@@ -5,7 +5,6 @@
 #define MAX_MESSAGE_LENGTH 512
 #define MAX_MESSAGE_BODY 510
 
-// Logging messages
 #define LOG_CLIENT_CREATED "Client instance created."
 #define LOG_CLIENT_DISCONNECTED(fd) ("Client disconnected, fd: " + Utils::intToString(fd))
 #define LOG_NICK_SET(nick) ("Nickname set to: " + nick)

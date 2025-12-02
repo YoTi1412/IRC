@@ -26,7 +26,6 @@ private:
     std::set<int>                   processedFds;
     std::map<std::string, Channel*> channels;
 
-    // Helper methods for setup
     void createSocket();
     void configureServerAddress();
     void bindSocket();
@@ -42,12 +41,10 @@ private:
     void closeSocket();
     void logShutdown();
 
-    // Helper methods for run
     void waitForEvents(struct epoll_event events[], int& nfds);
     void processEvents(struct epoll_event events[], int nfds);
     void handleClientEvent(int fd, uint32_t events);
 
-    // Helper methods for client connection
     void acceptNewConnection();
     void handleAcceptResult(int clientFd, sockaddr_in& clientAddr);
     void configureNewClient(int clientFd, sockaddr_in& clientAddr);
@@ -57,7 +54,6 @@ private:
     void sendIrcGreeting(Client* client);
     void addClientToEpoll(int clientFd);
 
-    // Helper methods for client data handling
     void handleClientData(int fd);
     void processReadResult(int fd, char* buffer, int bytesRead);
     void handleReadError(int fd);
@@ -70,7 +66,6 @@ private:
     std::list<std::string> parseMessage(const std::string& message);
     void tokenizePrefix(const std::string& prefix, std::list<std::string>& cmdList);
 
-    // Helper methods for command execution
     void executeCommand(int fd, std::list<std::string> cmdList);
     void sendInvalidCommandError(int fd, const std::string& cmd);
     void dispatchCommand(const std::string& cmd, std::list<std::string> cmdList, Client* client);

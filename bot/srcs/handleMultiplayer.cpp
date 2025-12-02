@@ -28,7 +28,6 @@ void Bot::handleMultiplayerCommand(const std::string &player, const std::vector<
         sendRoomUsage(player);
 }
 
-
 void Bot::sendRoomUsage(const std::string &player)
 {
     send_privmsg(player, "Usage: room <create|join|leave|status> [name]");
@@ -137,12 +136,12 @@ void Bot::handleRoomStatus(const std::string &player)
     }
 
     std::ostringstream statusMessage;
-    statusMessage << "Room '" << room.getName() << "' players: [" 
-                  << room.getPlayer1Nick() << ", " << room.getPlayer2Nick() << "] rounds: " 
-                  << room.getRoundsPlayed() << "; score: " 
-                  << room.getPlayer1Nick() << " " << room.getPlayer1Wins() << "-" 
+    statusMessage << "Room '" << room.getName() << "' players: ["
+                  << room.getPlayer1Nick() << ", " << room.getPlayer2Nick() << "] rounds: "
+                  << room.getRoundsPlayed() << "; score: "
+                  << room.getPlayer1Nick() << " " << room.getPlayer1Wins() << "-"
                   << room.getPlayer2Wins() << " " << room.getPlayer2Nick()
-                  << "; sets: " << room.getPlayer1Nick() << "=" << room.getPlayer1SetsWon() 
+                  << "; sets: " << room.getPlayer1Nick() << "=" << room.getPlayer1SetsWon()
                   << ", " << room.getPlayer2Nick() << "=" << room.getPlayer2SetsWon();
 
     send_privmsg(player, statusMessage.str());
@@ -191,8 +190,6 @@ void Bot::notifyRoomNotEnoughPlayers(Room &room)
     if (!room.getPlayer2Nick().empty())
         send_privmsg(room.getPlayer2Nick(), "There are not enough players in the room.");
 }
-
-
 
 void Bot::handleMultiplayerMove(const std::string &player, const std::string &move)
 {
@@ -260,7 +257,7 @@ void Bot::notifyRoomBothChose(Room &room)
             room.addPlayer2SetWin();
         }
         std::ostringstream finalMessage;
-        finalMessage << "Set finished. Round score: " << room.getPlayer1Nick() << " " << room.getPlayer1Wins() << " - " << room.getPlayer2Wins() << " " << room.getPlayer2Nick() << 
+        finalMessage << "Set finished. Round score: " << room.getPlayer1Nick() << " " << room.getPlayer1Wins() << " - " << room.getPlayer2Wins() << " " << room.getPlayer2Nick() <<
                ", ties=" << room.getRoundTies() << "; Sets: " << room.getPlayer1Nick() << "=" << room.getPlayer1SetsWon() << ", " << room.getPlayer2Nick() << "=" << room.getPlayer2SetsWon();
         if (!room.getPlayer1Nick().empty())
             send_privmsg(room.getPlayer1Nick(), finalMessage.str());

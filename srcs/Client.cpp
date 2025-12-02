@@ -1,14 +1,12 @@
 #include "Includes.hpp"
 #include <stdexcept>
 
-// Constructor
 Client::Client()
     : fd(-1), registered(false), authenticated(false), nickSet(false), userSet(false), realname(""), greeted(false)
 {
     Logger::info(LOG_CLIENT_CREATED);
 }
 
-// Destructor
 Client::~Client() {
     if (fd >= 0) {
         close(fd);
@@ -16,7 +14,6 @@ Client::~Client() {
     }
 }
 
-// Getters
 int Client::getFd() const { return fd; }
 std::string Client::getIPAddress() const { return IPAddress; }
 std::string Client::getNickname() const { return nickname; }
@@ -29,7 +26,6 @@ bool Client::isNickSet() const { return nickSet; }
 bool Client::isUserSet() const { return userSet; }
 std::string& Client::getCommandBuffer() { return commandBuffer; }
 
-// Setters
 void Client::setFd(int fd) { this->fd = fd; }
 void Client::setIPAddress(const std::string& ipAddress) { this->IPAddress = ipAddress; }
 void Client::setNickname(const std::string& nickname) {
@@ -66,12 +62,10 @@ void Client::setUserSet(bool status) { userSet = status; }
 bool Client::isGreeted() const { return greeted; }
 void Client::setGreeted(bool greeted) { this->greeted = greeted; }
 
-// Command Handling
 void Client::appendToCommandBuffer(const std::string& data) {
     commandBuffer += data;
 }
 
-// Reply Formatting
 std::string Client::formatReply(const std::string& reply) {
     std::string formatted = reply;
     if (formatted.rfind(CRLF) != formatted.length() - 2) {
@@ -105,7 +99,7 @@ void Client::handleSendResult(ssize_t bytesSent, const std::string& formattedRep
     }
     else
     {
-        // Successful send — avoid verbose logging here to prevent leaking message content
+
     }
 }
 

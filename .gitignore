@@ -4,3 +4,4 @@ compile_commands.json
 compile_flags.txt
 .cache/
 irc.pdf
+backup_cpp/

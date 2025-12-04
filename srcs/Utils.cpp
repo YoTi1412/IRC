@@ -2,6 +2,7 @@
 #include <iostream>
 
 void Utils::displayBanner() {
+    std::cout << "                                             \n";
     std::cout << " Welcome to:                                         \n";
     std::cout << "  _                                         \n";
     std::cout << " (_)                                        \n";

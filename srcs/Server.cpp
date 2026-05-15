@@ -450,16 +450,25 @@ void Server::appendToClientBuffer(int fd, const char *data) {
 }
 
 void Server::processClientBuffer(int fd) {
-  Client *client = clients[fd];
-  std::string &buf = client->getCommandBuffer();
+    std::map<int, Client*>::iterator it = clients.find(fd);
+    if (it == clients.end())
+        return;
 
-  while (hasNextMessage(buf)) {
-    std::string msg = extractNextMessage(buf);
-    std::list<std::string> cmd = parseMessage(msg);
-    if (!cmd.empty()) {
-      executeCommand(fd, cmd);
+    Client *client = it->second;
+    while (client && hasNextMessage(client->getCommandBuffer())) {
+
+        std::string msg =
+            extractNextMessage(client->getCommandBuffer());
+
+        std::list<std::string> cmd = parseMessage(msg);
+
+        if (!cmd.empty()) {
+            executeCommand(fd, cmd);
+            if (clients.find(fd) == clients.end())
+                return;
+            client = clients[fd];
+        }
     }
-  }
 }
 
 bool Server::hasNextMessage(const std::string &buffer) {
